@@ -16,7 +16,8 @@ Version     Validate accuracy        Submmit accuracy
 zero        0.586875                 0.622                (MFCC,2 layer) 
 0.01        0.595                    0.626                (MFCC,2 layer,ReLU) 
 0.01-1      0.604                    X                    (FBANK,3 layer,ReLU) 
-0.01-2      0.601 (still growing,need more epoch)         (FBANK,4 layer,ReLU)                    
+0.01-2      0.601 (still growing,need more epoch)         (FBANK,4 layer,ReLU)
+0.02        0.602 (in 275 epoch)     X                    (FBANK,2 layer,PReLU)
 
 
 Zero edition: create by Jan 
@@ -29,6 +30,8 @@ Ver 0.01: modify by PHHung
 	prediction_4.csv on kaggle
 	accuracy 0.626 
 
+Ver 0.02: modify by HYTseng
+	I train it on CPU XD. I would update the timing and accuracy when I get the GPU computation power.
 ==================================================================
 
 ToDo:
