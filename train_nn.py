@@ -24,6 +24,9 @@ but i use MFCC here
 if we compare with MFCC best record in our team (0.622)
 there is still some improvement from 0.622 to 0.626
 maybe we should use FBANK instead of MFCC in the future
+
+Ver. 0.03 by PHHung
+1.add momentum_sgd
 """
 
 
@@ -79,8 +82,8 @@ testing_y_shared = theano.tensor.cast(
 NIn = 69 # FBANK:69 MFCC:39
 NHidden_1 = 100
 NHidden_2 = 100
-#NHidden_3 = 100
-#NHidden_4 = 100
+NHidden_3 = 100
+NHidden_4 = 100
 NOut = 48
 
 L1_weighting = 0.001
@@ -127,7 +130,7 @@ b_hidden_2 = theano.shared(
 a_hidden_2 = theano.shared(
 	value=numpy.zeros((NHidden_1,),dtype=theano.config.floatX)+0.25,name='a_hidden_2',borrow=True)
 act_hidden_2 = Prelu(theano.tensor.dot(act_hidden_1,W_hidden_2)+b_hidden_2, a_hidden_2)
-'''
+
 #%% Hidden layer 3
 W_hidden_3 = theano.shared(
 	value=numpy.asarray(rng.uniform(
@@ -135,7 +138,9 @@ W_hidden_3 = theano.shared(
 		size=(NHidden_2,NHidden_3)),dtype=theano.config.floatX),name='W_hidden_3',borrow=True)
 b_hidden_3 = theano.shared(
 	value=numpy.zeros((NHidden_3,),dtype=theano.config.floatX),name='b_hidden_3',borrow=True)
-act_hidden_3 = relu(theano.tensor.dot(act_hidden_2,W_hidden_3)+b_hidden_3)
+a_hidden_3 = theano.shared(
+        value=numpy.zeros((NHidden_3,),dtype=theano.config.floatX)+0.25,name='a_hidden_2',borrow=True)
+act_hidden_3 = Prelu(theano.tensor.dot(act_hidden_2,W_hidden_3)+b_hidden_3, a_hidden_3)
 #%% Hidden layer 4
 W_hidden_4 = theano.shared(
 	value=numpy.asarray(rng.uniform(
@@ -143,19 +148,21 @@ W_hidden_4 = theano.shared(
 		size=(NHidden_3,NHidden_4)),dtype=theano.config.floatX),name='W_hidden_4',borrow=True)
 b_hidden_4 = theano.shared(
 	value=numpy.zeros((NHidden_4,),dtype=theano.config.floatX),name='b_hidden_4',borrow=True)
-act_hidden_4 = relu(theano.tensor.dot(act_hidden_3,W_hidden_4)+b_hidden_4)
-'''
+a_hidden_4 = theano.shared(
+        value=numpy.zeros((NHidden_4,),dtype=theano.config.floatX)+0.25,name='a_hidden_4',borrow=True)
+act_hidden_4 = Prelu(theano.tensor.dot(act_hidden_3,W_hidden_4)+b_hidden_4,a_hidden_4)
+
 #PHHung : initialize W with all zero?
 #W_out = theano.shared(value=numpy.zeros((NHidden,NOut),dtype=theano.config.floatX),name='W_out',borrow=True)
 W_out = theano.shared(
 	value=numpy.asarray(rng.uniform(
-		low=-numpy.sqrt(6./(NHidden_2+NOut)),high=numpy.sqrt(6./(NHidden_2+NOut)),
-		size=(NHidden_2,NOut)),dtype=theano.config.floatX),name='W_out',borrow=True)
+		low=-numpy.sqrt(6./(NHidden_4+NOut)),high=numpy.sqrt(6./(NHidden_4+NOut)),
+		size=(NHidden_4,NOut)),dtype=theano.config.floatX),name='W_out',borrow=True)
 b_out = theano.shared(
 	value=numpy.zeros((NOut,),dtype=theano.config.floatX),name='b_out',borrow=True)
 
 #PHHung : Can we use nnet.softmax? (I guess not... maybe we have to write one)
-softmax = theano.tensor.nnet.softmax(theano.tensor.dot(act_hidden_2,W_out)+b_out)
+softmax = theano.tensor.nnet.softmax(theano.tensor.dot(act_hidden_4,W_out)+b_out)
 prediction = theano.tensor.argmax(softmax,axis=1)
 
 def NLL(label):
@@ -171,21 +178,34 @@ def errors(label):
 
 cost_function = NLL(y) # +L1_reg*L1_weighting+L2_reg*L2_weighting
 
-#params = [ W_hidden_1, b_hidden_1, W_hidden_2, b_hidden_2, W_hidden_3, b_hidden_3, W_hidden_4, b_hidden_4, W_out, b_out]
-params = [ W_hidden_1, b_hidden_1, a_hidden_1, W_hidden_2, b_hidden_2, a_hidden_2, W_out, b_out]
-grads = [];
-for p in params:
-    grads.append(theano.tensor.grad(cost_function,p))
+params = [ W_hidden_1, b_hidden_1, a_hidden_1, W_hidden_2, b_hidden_2, a_hidden_2, W_hidden_3, b_hidden_3,a_hidden_3, W_hidden_4, b_hidden_4, a_hidden_4, W_out, b_out]
+#params = [ W_hidden_1, b_hidden_1, a_hidden_1, W_hidden_2, b_hidden_2, a_hidden_2, W_out, b_out]
+#grads = []
+#for p in params:
+#    grads.append(theano.tensor.grad(cost_function,p))
 
 #PHHung : LR = 0.2 may be a litte too big!!     
 Learning_Rate = 0.02 #0.2
-
-updates = [];
+'''
+#PHHung : vanilla gd
+updates = []
 for p,g in zip(params,grads):
+    #Learning_Rate = Learning_Rate -0.02
     updates.append((p,p-Learning_Rate * g))
-    
+'''
+#PHHung : momentum gd + learning rate decay
+def momentum_sgd(cost, params, learning_rate, momentum):
+    assert momentum < 1 and momentum >= 0
+    updates = []
+    for param in params:
+        param_update = theano.shared(param.get_value()*0., broadcastable=param.broadcastable)
+        updates.append((param, param - learning_rate*param_update))
+        updates.append((param_update, momentum*param_update + (1. - momentum)*theano.tensor.grad(cost, param)))
+    return updates
+
+
 training_proc = theano.function(
-	inputs=[idx], outputs=cost_function, updates=updates,
+	inputs=[idx], outputs=cost_function, updates=momentum_sgd(cost_function,params,Learning_Rate,0.7),
 	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]})
 
 test_on_training_proc = theano.function(
@@ -199,12 +219,12 @@ test_on_testing_proc = theano.function(
 NEpochs = 2000;
 iteration = 0;
 
-g_W_hidden = theano.function(
-	inputs=[idx],outputs=grads[0],
-	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]});
-g_W_out = theano.function(
-	inputs=[idx],outputs=grads[0],
-	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]});
+#g_W_hidden = theano.function(
+#	inputs=[idx],outputs=grads[0],
+#	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]});
+#g_W_out = theano.function(
+#	inputs=[idx],outputs=grads[0],
+#	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]});
 
 best_accuracy = 0
 
