@@ -21,7 +21,7 @@ zero        0.586875                 0.622                (MFCC,2 layer)
 0.02-1      0.622 (@2000 epoch)      ?                    (FBANK,4 layer,PReLU)
 0.03        0.628*(@2000 epoch)      ?                    (FBANK,4 layer,PReLU,Momentum)
 
-*still growing
+*still growing (I'll train a 4000 epoch ver later)
 
 Zero edition: create by Jan 
 	it takes about 8 mins on GTX760 for 200 epoch 
