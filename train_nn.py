@@ -4,16 +4,41 @@ Created on Wed Mar 25 21:32:02 2015
 
 @author: Jason
 """
+"""
+Ver. 0.01 by PHHung
+some modification
+1.use relu instead of tanh
+2.initialize W from -x to + x (I don't think form 0 to +x is a good idea)
+3.lower learning rate <= because in previous version, at later epoch(100+) accuracy 
+                            is jumping between 0.55 and 0.59 (which means learnig rate too high)
+4.smaller batch_size <= learn faster
+5.add some comment (something we should discuss)
+6.add timer to record computation time
+
+submission result (prediction_4.csv)
+@200 epoch validate accuracy is 0.595 (best record 0.600)
+submission accuracy is 0.62645 
+lower than our best record 0.62898 (FBANK)
+
+I guess that is because in 0.628 we use FBANK
+but i use MFCC here 
+
+if we compare with MFCC best record in our team (0.622)
+there is still some improvement from 0.622 to 0.626
+
+maybe we should use FBANK instead of MFCC in the future
+"""
+
 
 import paths
-
+import time
 import numpy
 import cPickle
 import theano
 
 #%% Read pickled data
 
-
+start_time = time.clock()
 
 rng = numpy.random.RandomState(6789)
 f = file(paths.pathToSaveMFCCTrain,'rb')
@@ -22,6 +47,8 @@ f.close()
 
 raw_scaling = []
 raw_means = []
+
+# Data normalize
 for i in range(raw_data.shape[1]):
     scaling = numpy.sqrt(numpy.var(raw_data[:,i]));
     raw_scaling.append(scaling)
@@ -56,7 +83,8 @@ NOut = 48
 L1_weighting = 0.001
 L2_weighting = 0.0001
 
-batch_size = 1000
+#PHHung : usually use 64 or 128 in practice (I guess~) (To Tune)
+batch_size = 128 #1000
 
 NBatches = int(numpy.floor(training_x_shared.get_value(borrow=True).shape[0]/batch_size))
 NTestBatches = int(numpy.floor(testing_x_shared.get_value(borrow=True).shape[0]/batch_size))
@@ -65,17 +93,29 @@ x = theano.tensor.matrix('x')
 y = theano.tensor.ivector('y')
 idx = theano.tensor.lscalar('idx')
 
+#PHHung relu is your good friend~
 def relu(x):
     return theano.tensor.switch(x<0, 0, x)
 
-W_hidden_1 = theano.shared(value=numpy.asarray(rng.uniform(low=0,high=numpy.sqrt(6./(NIn+NHidden_1)),size=(NIn,NHidden_1)),dtype=theano.config.floatX),name='W_hidden_1',borrow=True)
+
+#PHHung : uniform distribution from 0 to sqrt(6/NIn+NHidden)?
+#         or from -sqrt(6/NIn+NHidden) to sqrt(6/NIn+NHidden)?
+W_hidden_1 = theano.shared(value=numpy.asarray(rng.uniform(low=-numpy.sqrt(6./(NIn+NHidden_1)),high=numpy.sqrt(6./(NIn+NHidden_1)),size=(NIn,NHidden_1)),dtype=theano.config.floatX),name='W_hidden_1',borrow=True)
 b_hidden_1 = theano.shared(value=numpy.zeros((NHidden_1,),dtype=theano.config.floatX),name='b_hidden_1',borrow=True)
-act_hidden_1 = theano.tensor.tanh(theano.tensor.dot(x,W_hidden_1)+b_hidden_1);
-W_hidden = theano.shared(value=numpy.asarray(rng.uniform(low=0,high=numpy.sqrt(6./(NHidden_1+NHidden)),size=(NHidden_1,NHidden)),dtype=theano.config.floatX),name='W_hidden',borrow=True)
+#act_hidden_1 = theano.tensor.tanh(theano.tensor.dot(x,W_hidden_1)+b_hidden_1);
+act_hidden_1 = relu(theano.tensor.dot(x,W_hidden_1)+b_hidden_1)
+#PHHung : try relu instead of tanh (already def before)
+
+W_hidden = theano.shared(value=numpy.asarray(rng.uniform(low=-numpy.sqrt(6./(NHidden_1+NHidden)),high=numpy.sqrt(6./(NHidden_1+NHidden)),size=(NHidden_1,NHidden)),dtype=theano.config.floatX),name='W_hidden',borrow=True)
 b_hidden = theano.shared(value=numpy.zeros((NHidden,),dtype=theano.config.floatX),name='b_hidden',borrow=True)
-act_hidden_2 = theano.tensor.tanh(theano.tensor.dot(act_hidden_1,W_hidden)+b_hidden);
-W_out = theano.shared(value=numpy.zeros((NHidden,NOut),dtype=theano.config.floatX),name='W_out',borrow=True)
+#act_hidden_2 = theano.tensor.tanh(theano.tensor.dot(act_hidden_1,W_hidden)+b_hidden)
+act_hidden_2 = relu(theano.tensor.dot(act_hidden_1,W_hidden)+b_hidden)
+
+#PHHung : initialize W with all zero?
+#W_out = theano.shared(value=numpy.zeros((NHidden,NOut),dtype=theano.config.floatX),name='W_out',borrow=True)
+W_out = theano.shared(value=numpy.asarray(rng.uniform(low=-numpy.sqrt(6./(NHidden+NOut)),high=numpy.sqrt(6./(NHidden+NOut)),size=(NHidden,NOut)),dtype=theano.config.floatX),name='W_out',borrow=True)
 b_out = theano.shared(value=numpy.zeros((NOut,),dtype=theano.config.floatX),name='b_out',borrow=True)
+#PHHung : Can we use nnet.softmax? (I guess not... maybe we have to write one)
 softmax = theano.tensor.nnet.softmax(theano.tensor.dot(act_hidden_2,W_out)+b_out)
 prediction = theano.tensor.argmax(softmax,axis=1)
 
@@ -95,8 +135,9 @@ params = [ W_hidden_1, b_hidden_1, W_hidden, b_hidden, W_out, b_out]
 grads = [];
 for p in params:
     grads.append(theano.tensor.grad(cost_function,p))
-    
-Learning_Rate = 0.2
+
+#PHHung : LR = 0.2 may be a litte too big!!     
+Learning_Rate = 0.02 #0.2
 
 updates = [];
 for p,g in zip(params,grads):
@@ -126,7 +167,7 @@ for epoch in xrange(NEpochs):
         if iteration % 200 == 0:
             print 'Epoch %i, Minibatch %i' % (epoch,minibatch_i)
             test_errors = [test_on_testing_proc(i) for i in xrange(NTestBatches)]
-            print 'Current Accuracy: %f ' % numpy.mean(test_errors)
+            print '                         Current Accuracy: %f ' % numpy.mean(test_errors)
 
 #%% Predict and write result
 
@@ -160,4 +201,7 @@ with open('prediction_3.csv','wb') as csvfile:
     csvw.writerow(['Id','Prediction'])
     for id_,pred_ in zip(evaluation_ids,evaluation_y_pred_str):
         csvw.writerow([id_,pred_])
-   
+
+stop_time = time.clock()
+
+print('Total time = %.2f'%((start_time-stop_time)/60.))
