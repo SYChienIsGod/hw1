@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Mar 25 21:32:02 2015
-
 @author: Jason
 """
 """
 Ver. 0.01 by PHHung
+Ver. 0.02 by HYTseng
 some modification
-1.use relu instead of tanh
+1.use relu instead of tanh -> use Prelu instead
 2.initialize W from -x to + x (I don't think form 0 to +x is a good idea)
 3.lower learning rate <= because in previous version, at later epoch(100+) accuracy 
                             is jumping between 0.55 and 0.59 (which means learnig rate too high)
@@ -15,18 +15,14 @@ some modification
 5.add some comment (something we should discuss)
 6.add timer to record computation time
 7.display accuracy @every epoch (instead of @every 200 iteration) 
-
 submission result (prediction_4.csv)
 @200 epoch validate accuracy is 0.595 (best record 0.600)
 submission accuracy is 0.62645 
 lower than our best record 0.62898 (FBANK)
-
 I guess that is because in 0.628 we use FBANK
 but i use MFCC here 
-
 if we compare with MFCC best record in our team (0.622)
 there is still some improvement from 0.622 to 0.626
-
 maybe we should use FBANK instead of MFCC in the future
 """
 
@@ -103,8 +99,8 @@ y = theano.tensor.ivector('y')
 idx = theano.tensor.lscalar('idx')
 
 #PHHung relu is your good friend~
-def relu(x):
-    return theano.tensor.switch(x<0, 0, x)
+def Prelu(x, a):
+    return theano.tensor.switch(x<0, a*x, x)
 
 
 #PHHung : uniform distribution from 0 to sqrt(6/NIn+NHidden)?
@@ -117,7 +113,9 @@ W_hidden_1 = theano.shared(
 		size=(NIn,NHidden_1)),dtype=theano.config.floatX),name='W_hidden_1',borrow=True)
 b_hidden_1 = theano.shared(
 	value=numpy.zeros((NHidden_1,),dtype=theano.config.floatX),name='b_hidden_1',borrow=True)
-act_hidden_1 = relu(theano.tensor.dot(x,W_hidden_1)+b_hidden_1)
+a_hidden_1 = theano.shared(
+	value=numpy.zeros((NHidden_1,),dtype=theano.config.floatX)+0.25,name='a_hidden_1',borrow=True)
+act_hidden_1 = Prelu(theano.tensor.dot(x,W_hidden_1)+b_hidden_1, a_hidden_1)
 
 #%% Hidden layer 2
 W_hidden_2 = theano.shared(
@@ -126,7 +124,9 @@ W_hidden_2 = theano.shared(
 		size=(NHidden_1,NHidden_2)),dtype=theano.config.floatX),name='W_hidden_2',borrow=True)
 b_hidden_2 = theano.shared(
 	value=numpy.zeros((NHidden_2,),dtype=theano.config.floatX),name='b_hidden_2',borrow=True)
-act_hidden_2 = relu(theano.tensor.dot(act_hidden_1,W_hidden_2)+b_hidden_2)
+a_hidden_2 = theano.shared(
+	value=numpy.zeros((NHidden_1,),dtype=theano.config.floatX)+0.25,name='a_hidden_2',borrow=True)
+act_hidden_2 = Prelu(theano.tensor.dot(act_hidden_1,W_hidden_2)+b_hidden_2, a_hidden_2)
 '''
 #%% Hidden layer 3
 W_hidden_3 = theano.shared(
@@ -136,7 +136,6 @@ W_hidden_3 = theano.shared(
 b_hidden_3 = theano.shared(
 	value=numpy.zeros((NHidden_3,),dtype=theano.config.floatX),name='b_hidden_3',borrow=True)
 act_hidden_3 = relu(theano.tensor.dot(act_hidden_2,W_hidden_3)+b_hidden_3)
-
 #%% Hidden layer 4
 W_hidden_4 = theano.shared(
 	value=numpy.asarray(rng.uniform(
@@ -173,7 +172,7 @@ def errors(label):
 cost_function = NLL(y) # +L1_reg*L1_weighting+L2_reg*L2_weighting
 
 #params = [ W_hidden_1, b_hidden_1, W_hidden_2, b_hidden_2, W_hidden_3, b_hidden_3, W_hidden_4, b_hidden_4, W_out, b_out]
-params = [ W_hidden_1, b_hidden_1, W_hidden_2, b_hidden_2, W_out, b_out]
+params = [ W_hidden_1, b_hidden_1, a_hidden_1, W_hidden_2, b_hidden_2, a_hidden_2, W_out, b_out]
 grads = [];
 for p in params:
     grads.append(theano.tensor.grad(cost_function,p))
