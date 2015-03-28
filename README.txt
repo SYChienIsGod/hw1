@@ -17,8 +17,8 @@ zero        0.586875                 0.622                (MFCC,2 layer)
 0.01        0.595                    0.626                (MFCC,2 layer,ReLU) 
 0.01-1      0.604                    X                    (FBANK,3 layer,ReLU) 
 0.01-2      0.614 (@2000 epoch)      X                    (FBANK,4 layer,ReLU)
-0.02        0.602 (in 275 epoch)     X                    (FBANK,2 layer,PReLU)
-0.02-1      (on going... wait until 23:00)                (FBANK,4 layer,PReLU)
+0.02        0.602 (@275  epoch)      X                    (FBANK,2 layer,PReLU)
+0.02-1      0.622 (@2000 epoch)      ?                    (FBANK,4 layer,PReLU)
 
 Zero edition: create by Jan 
 	it takes about 8 mins on GTX760 for 200 epoch 
