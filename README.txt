@@ -16,9 +16,9 @@ Version     Validate accuracy        Submmit accuracy
 zero        0.586875                 0.622                (MFCC,2 layer) 
 0.01        0.595                    0.626                (MFCC,2 layer,ReLU) 
 0.01-1      0.604                    X                    (FBANK,3 layer,ReLU) 
-0.01-2      0.601 (still growing,need more epoch)         (FBANK,4 layer,ReLU)
+0.01-2      0.614 (@2000 epoch)      X                    (FBANK,4 layer,ReLU)
 0.02        0.602 (in 275 epoch)     X                    (FBANK,2 layer,PReLU)
-
+0.02-1      (on going... wait until 23:00)                (FBANK,4 layer,PReLU)
 
 Zero edition: create by Jan 
 	it takes about 8 mins on GTX760 for 200 epoch 
@@ -32,6 +32,7 @@ Ver 0.01: modify by PHHung
 
 Ver 0.02: modify by HYTseng
 	I train it on CPU XD. I would update the timing and accuracy when I get the GPU computation power.
+        PReLU: http://arxiv.org/pdf/1502.01852v1.pdf
 ==================================================================
 
 ToDo:
