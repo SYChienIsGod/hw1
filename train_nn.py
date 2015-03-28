@@ -14,6 +14,7 @@ some modification
 4.smaller batch_size <= learn faster
 5.add some comment (something we should discuss)
 6.add timer to record computation time
+7.display accuracy @every epoch (instead of @every 200 iteration) 
 
 submission result (prediction_4.csv)
 @200 epoch validate accuracy is 0.595 (best record 0.600)
@@ -41,7 +42,7 @@ import theano
 start_time = time.clock()
 
 rng = numpy.random.RandomState(6789)
-f = file(paths.pathToSaveMFCCTrain,'rb')
+f = file(paths.pathToSaveFBANKTrain,'rb')
 raw_data = cPickle.load(f)
 f.close()
 
@@ -69,25 +70,33 @@ training_labels = raw_labels[training_data_sel]
 testing_labels = raw_labels[testing_data_sel]
 
 
-training_x_shared = theano.shared(numpy.asarray(training_data,dtype=theano.config.floatX),borrow=True)
-training_y_shared = theano.tensor.cast(theano.shared(numpy.asarray(training_labels,dtype=theano.config.floatX),borrow=True),'int32')
-testing_x_shared = theano.shared(numpy.asarray(testing_data,dtype=theano.config.floatX),borrow=True)
-testing_y_shared = theano.tensor.cast(theano.shared(numpy.asarray(testing_labels,dtype=theano.config.floatX),borrow=True),'int32')
+training_x_shared = theano.shared(
+	numpy.asarray(training_data,dtype=theano.config.floatX),borrow=True)
+training_y_shared = theano.tensor.cast(
+	theano.shared(numpy.asarray(training_labels,dtype=theano.config.floatX),borrow=True),'int32')
+testing_x_shared = theano.shared(
+	numpy.asarray(testing_data,dtype=theano.config.floatX),borrow=True)
+testing_y_shared = theano.tensor.cast(
+	theano.shared(numpy.asarray(testing_labels,dtype=theano.config.floatX),borrow=True),'int32')
 
 #%% Here we go
-NIn = 39
+NIn = 69 # FBANK:69 MFCC:39
 NHidden_1 = 100
-NHidden = 100
+NHidden_2 = 100
+#NHidden_3 = 100
+#NHidden_4 = 100
 NOut = 48
 
 L1_weighting = 0.001
 L2_weighting = 0.0001
 
 #PHHung : usually use 64 or 128 in practice (I guess~) (To Tune)
-batch_size = 128 #1000
+batch_size = 512 #1000
 
-NBatches = int(numpy.floor(training_x_shared.get_value(borrow=True).shape[0]/batch_size))
-NTestBatches = int(numpy.floor(testing_x_shared.get_value(borrow=True).shape[0]/batch_size))
+NBatches = int(numpy.floor(
+	training_x_shared.get_value(borrow=True).shape[0]/batch_size))
+NTestBatches = int(numpy.floor(
+	testing_x_shared.get_value(borrow=True).shape[0]/batch_size))
 
 x = theano.tensor.matrix('x')
 y = theano.tensor.ivector('y')
@@ -100,38 +109,71 @@ def relu(x):
 
 #PHHung : uniform distribution from 0 to sqrt(6/NIn+NHidden)?
 #         or from -sqrt(6/NIn+NHidden) to sqrt(6/NIn+NHidden)?
-W_hidden_1 = theano.shared(value=numpy.asarray(rng.uniform(low=-numpy.sqrt(6./(NIn+NHidden_1)),high=numpy.sqrt(6./(NIn+NHidden_1)),size=(NIn,NHidden_1)),dtype=theano.config.floatX),name='W_hidden_1',borrow=True)
-b_hidden_1 = theano.shared(value=numpy.zeros((NHidden_1,),dtype=theano.config.floatX),name='b_hidden_1',borrow=True)
-#act_hidden_1 = theano.tensor.tanh(theano.tensor.dot(x,W_hidden_1)+b_hidden_1);
+
+#%% Hidden layer 1
+W_hidden_1 = theano.shared(
+	value=numpy.asarray(rng.uniform(
+		low=-numpy.sqrt(6./(NIn+NHidden_1)),high=numpy.sqrt(6./(NIn+NHidden_1)),
+		size=(NIn,NHidden_1)),dtype=theano.config.floatX),name='W_hidden_1',borrow=True)
+b_hidden_1 = theano.shared(
+	value=numpy.zeros((NHidden_1,),dtype=theano.config.floatX),name='b_hidden_1',borrow=True)
 act_hidden_1 = relu(theano.tensor.dot(x,W_hidden_1)+b_hidden_1)
-#PHHung : try relu instead of tanh (already def before)
 
-W_hidden = theano.shared(value=numpy.asarray(rng.uniform(low=-numpy.sqrt(6./(NHidden_1+NHidden)),high=numpy.sqrt(6./(NHidden_1+NHidden)),size=(NHidden_1,NHidden)),dtype=theano.config.floatX),name='W_hidden',borrow=True)
-b_hidden = theano.shared(value=numpy.zeros((NHidden,),dtype=theano.config.floatX),name='b_hidden',borrow=True)
-#act_hidden_2 = theano.tensor.tanh(theano.tensor.dot(act_hidden_1,W_hidden)+b_hidden)
-act_hidden_2 = relu(theano.tensor.dot(act_hidden_1,W_hidden)+b_hidden)
+#%% Hidden layer 2
+W_hidden_2 = theano.shared(
+	value=numpy.asarray(rng.uniform(
+		low=-numpy.sqrt(6./(NHidden_1+NHidden_2)),high=numpy.sqrt(6./(NHidden_1+NHidden_2)),
+		size=(NHidden_1,NHidden_2)),dtype=theano.config.floatX),name='W_hidden_2',borrow=True)
+b_hidden_2 = theano.shared(
+	value=numpy.zeros((NHidden_2,),dtype=theano.config.floatX),name='b_hidden_2',borrow=True)
+act_hidden_2 = relu(theano.tensor.dot(act_hidden_1,W_hidden_2)+b_hidden_2)
+'''
+#%% Hidden layer 3
+W_hidden_3 = theano.shared(
+	value=numpy.asarray(rng.uniform(
+		low=-numpy.sqrt(6./(NHidden_2+NHidden_3)),high=numpy.sqrt(6./(NHidden_2+NHidden_3)),
+		size=(NHidden_2,NHidden_3)),dtype=theano.config.floatX),name='W_hidden_3',borrow=True)
+b_hidden_3 = theano.shared(
+	value=numpy.zeros((NHidden_3,),dtype=theano.config.floatX),name='b_hidden_3',borrow=True)
+act_hidden_3 = relu(theano.tensor.dot(act_hidden_2,W_hidden_3)+b_hidden_3)
 
+#%% Hidden layer 4
+W_hidden_4 = theano.shared(
+	value=numpy.asarray(rng.uniform(
+		low=-numpy.sqrt(6./(NHidden_3+NHidden_4)),high=numpy.sqrt(6./(NHidden_3+NHidden_4)),
+		size=(NHidden_3,NHidden_4)),dtype=theano.config.floatX),name='W_hidden_4',borrow=True)
+b_hidden_4 = theano.shared(
+	value=numpy.zeros((NHidden_4,),dtype=theano.config.floatX),name='b_hidden_4',borrow=True)
+act_hidden_4 = relu(theano.tensor.dot(act_hidden_3,W_hidden_4)+b_hidden_4)
+'''
 #PHHung : initialize W with all zero?
 #W_out = theano.shared(value=numpy.zeros((NHidden,NOut),dtype=theano.config.floatX),name='W_out',borrow=True)
-W_out = theano.shared(value=numpy.asarray(rng.uniform(low=-numpy.sqrt(6./(NHidden+NOut)),high=numpy.sqrt(6./(NHidden+NOut)),size=(NHidden,NOut)),dtype=theano.config.floatX),name='W_out',borrow=True)
-b_out = theano.shared(value=numpy.zeros((NOut,),dtype=theano.config.floatX),name='b_out',borrow=True)
+W_out = theano.shared(
+	value=numpy.asarray(rng.uniform(
+		low=-numpy.sqrt(6./(NHidden_2+NOut)),high=numpy.sqrt(6./(NHidden_2+NOut)),
+		size=(NHidden_2,NOut)),dtype=theano.config.floatX),name='W_out',borrow=True)
+b_out = theano.shared(
+	value=numpy.zeros((NOut,),dtype=theano.config.floatX),name='b_out',borrow=True)
+
 #PHHung : Can we use nnet.softmax? (I guess not... maybe we have to write one)
 softmax = theano.tensor.nnet.softmax(theano.tensor.dot(act_hidden_2,W_out)+b_out)
 prediction = theano.tensor.argmax(softmax,axis=1)
 
 def NLL(label):
-    return -theano.tensor.mean(theano.tensor.log(softmax)[theano.tensor.arange(label.shape[0]), label])
+    return -theano.tensor.mean(
+    	theano.tensor.log(softmax)[theano.tensor.arange(label.shape[0]), label])
     
 def errors(label):
     return theano.tensor.mean(theano.tensor.eq(prediction,label))
 
 
-L1_reg = abs(W_hidden).sum()+abs(W_out).sum()
-L2_reg = (W_hidden ** 2).sum()+(W_out ** 2).sum()
+#L1_reg = abs(W_hidden).sum()+abs(W_out).sum()
+#L2_reg = (W_hidden ** 2).sum()+(W_out ** 2).sum()
 
 cost_function = NLL(y) # +L1_reg*L1_weighting+L2_reg*L2_weighting
 
-params = [ W_hidden_1, b_hidden_1, W_hidden, b_hidden, W_out, b_out]
+#params = [ W_hidden_1, b_hidden_1, W_hidden_2, b_hidden_2, W_hidden_3, b_hidden_3, W_hidden_4, b_hidden_4, W_out, b_out]
+params = [ W_hidden_1, b_hidden_1, W_hidden_2, b_hidden_2, W_out, b_out]
 grads = [];
 for p in params:
     grads.append(theano.tensor.grad(cost_function,p))
@@ -143,17 +185,29 @@ updates = [];
 for p,g in zip(params,grads):
     updates.append((p,p-Learning_Rate * g))
     
-training_proc = theano.function(inputs=[idx], outputs=cost_function, updates=updates,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]})
+training_proc = theano.function(
+	inputs=[idx], outputs=cost_function, updates=updates,
+	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]})
 
-test_on_training_proc = theano.function(inputs=[idx], outputs=errors(y), givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]})
+test_on_training_proc = theano.function(
+	inputs=[idx], outputs=errors(y), 
+	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]})
 
-test_on_testing_proc = theano.function(inputs=[idx], outputs=errors(y), givens={x:testing_x_shared[idx*batch_size:(idx+1)*batch_size],y:testing_y_shared[idx*batch_size:(idx+1)*batch_size]})
+test_on_testing_proc = theano.function(
+	inputs=[idx], outputs=errors(y), 
+	givens={x:testing_x_shared[idx*batch_size:(idx+1)*batch_size],y:testing_y_shared[idx*batch_size:(idx+1)*batch_size]})
 
-NEpochs = 200;
+NEpochs = 2000;
 iteration = 0;
 
-g_W_hidden = theano.function(inputs=[idx],outputs=grads[0],givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]});
-g_W_out = theano.function(inputs=[idx],outputs=grads[0],givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]});
+g_W_hidden = theano.function(
+	inputs=[idx],outputs=grads[0],
+	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]});
+g_W_out = theano.function(
+	inputs=[idx],outputs=grads[0],
+	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]});
+
+best_accuracy = 0
 
 #%%
 for epoch in xrange(NEpochs):
@@ -164,14 +218,18 @@ for epoch in xrange(NEpochs):
         #print 'Gradient W_hidden: %f' % numpy.sum(numpy.abs(gradient_W_hidden))
         #gradient_W_out = g_W_out(minibatch_i);
         #print 'Gradient W_out: %f' % numpy.sum(numpy.abs(gradient_W_out))
-        if iteration % 200 == 0:
-            print 'Epoch %i, Minibatch %i' % (epoch,minibatch_i)
-            test_errors = [test_on_testing_proc(i) for i in xrange(NTestBatches)]
-            print '                         Current Accuracy: %f ' % numpy.mean(test_errors)
-
+        #if iteration % 200 == 0:
+        #    print 'Epoch %i, Minibatch %i' % (epoch,minibatch_i)
+        #    test_errors = [test_on_testing_proc(i) for i in xrange(NTestBatches)]
+        #    print '                         Current Accuracy: %f ' % numpy.mean(test_errors)
+    test_errors = [test_on_testing_proc(i) for i in xrange(NTestBatches)]
+    print 'Epoch %i Current Accuracy: %f ' % (epoch,numpy.mean(test_errors))
+    if best_accuracy < numpy.mean(test_errors):
+    	best_accuracy = numpy.mean(test_errors)
+    	print('best accuracy %f'%best_accuracy)
 #%% Predict and write result
 
-f = file(paths.pathToSaveMFCCTest,'rb')
+f = file(paths.pathToSaveFBANKTest,'rb')
 evaluation_data = cPickle.load(f)
 f.close()
 
@@ -204,4 +262,4 @@ with open('prediction_3.csv','wb') as csvfile:
 
 stop_time = time.clock()
 
-print('Total time = %.2f'%((start_time-stop_time)/60.))
+print('Total time = %.2fmins'%((stop_time-start_time)/60.))
