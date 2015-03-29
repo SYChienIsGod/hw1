@@ -1,0 +1,52 @@
+#
+#After training, use predict.py to produce submission result
+#
+
+import paths
+import time
+import numpy
+import cPickle
+import theano
+
+f = file(paths.pathToSaveFBANKTest,'rb')
+evaluation_data = cPickle.load(f)
+f.close()
+
+f = file('model_best.save', 'rb')
+params = cPickle.load(f)
+f.close()
+
+#scaling & mean
+
+
+for i in range(evaluation_data.shape[1]):
+    scaling = raw_scaling[i]
+    evaluation_data[:,i] = evaluation_data[:,i]/scaling
+    meaning = raw_means[i]
+    evaluation_data[:,i] = evaluation_data[:,i]-meaning
+
+f = file(paths.pathToSaveTestIds,'rb')
+evaluation_ids = cPickle.load(f)
+f.close()
+
+evaluation_x_shared = theano.shared(numpy.asarray(evaluation_data,dtype=theano.config.floatX),borrow=True)
+
+predict_proc = theano.function(inputs=[],outputs=prediction,givens={x:evaluation_x_shared})
+
+evaluation_y_pred = predict_proc()
+
+ph48_39 = numpy.loadtxt(paths.pathToMapPhones,dtype='str_',delimiter='\t')
+ph48_39_dict = dict(ph48_39)
+phi_48 = dict(zip(numpy.arange(0,48),ph48_39[:,0])) # [0,47] -> 48 phonemes
+phi_39 = dict(zip(numpy.arange(0,39),list(set(ph48_39[:,1])))) # [0,38] -> 39 phonemes
+evaluation_y_pred_str = [phi_39[pred] for pred in evaluation_y_pred]
+import csv
+with open('prediction_3.csv','wb') as csvfile:
+    csvw = csv.writer(csvfile,delimiter=',')
+    csvw.writerow(['Id','Prediction'])
+    for id_,pred_ in zip(evaluation_ids,evaluation_y_pred_str):
+        csvw.writerow([id_,pred_])
+
+stop_time = time.clock()
+
+print('Total time = %.2fmins'%((stop_time-start_time)/60.))

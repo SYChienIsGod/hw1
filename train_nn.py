@@ -115,6 +115,7 @@ def Prelu(x, a):
 
 #PHHung : uniform distribution from 0 to sqrt(6/NIn+NHidden)?
 #         or from -sqrt(6/NIn+NHidden) to sqrt(6/NIn+NHidden)? --> ReLU doesn't have a gradient once the input is negative... so I thought that may be useful (Jan)
+#PHHung : z=w*x+b the input of activate function is z , but here we are initializing w , I thought that is different thing (w&z)
 
 # Hidden layer 1
 W_hidden_1 = theano.shared(
@@ -221,7 +222,7 @@ def momentum_sgd(cost, params, learning_rate, momentum):
 
 
 training_proc = theano.function(
-	inputs=[idx], outputs=cost_function, updates=momentum_sgd(cost_function,params,Learning_Rate,0.7),
+	inputs=[idx], outputs=cost_function, updates=momentum_sgd(cost_function,params,Learning_Rate,0.8),
 	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]})
 
 test_on_training_proc = theano.function(
@@ -235,7 +236,7 @@ test_on_testing_proc = theano.function(
 softmax_theano_test = theano.function(inputs=[idx], outputs=softmax,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size]})
 softmax_manual_test = theano.function(inputs=[idx], outputs=softmax_manual,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size]})
 
-NEpochs = 20;
+NEpochs =10;
 iteration = 0;
 
 #g_W_hidden = theano.function(
@@ -272,40 +273,15 @@ for epoch in xrange(NEpochs):
     if best_accuracy < numpy.mean(test_errors):
     	best_accuracy = numpy.mean(test_errors)
     	print('best accuracy %f'%best_accuracy)
-#%% Predict and write result
-
-f = file(paths.pathToSaveFBANKTest,'rb')
-evaluation_data = cPickle.load(f)
-f.close()
-
-for i in range(evaluation_data.shape[1]):
-    scaling = raw_scaling[i]
-    evaluation_data[:,i] = evaluation_data[:,i]/scaling
-    meaning = raw_means[i]
-    evaluation_data[:,i] = evaluation_data[:,i]-meaning
-
-f = file(paths.pathToSaveTestIds,'rb')
-evaluation_ids = cPickle.load(f)
-f.close()
-
-evaluation_x_shared = theano.shared(numpy.asarray(evaluation_data,dtype=theano.config.floatX),borrow=True)
-
-predict_proc = theano.function(inputs=[],outputs=prediction,givens={x:evaluation_x_shared})
-
-evaluation_y_pred = predict_proc()
-
-ph48_39 = numpy.loadtxt(paths.pathToMapPhones,dtype='str_',delimiter='\t')
-ph48_39_dict = dict(ph48_39)
-phi_48 = dict(zip(numpy.arange(0,48),ph48_39[:,0])) # [0,47] -> 48 phonemes
-phi_39 = dict(zip(numpy.arange(0,39),list(set(ph48_39[:,1])))) # [0,38] -> 39 phonemes
-evaluation_y_pred_str = [phi_39[pred] for pred in evaluation_y_pred]
-import csv
-with open('prediction_3.csv','wb') as csvfile:
-    csvw = csv.writer(csvfile,delimiter=',')
-    csvw.writerow(['Id','Prediction'])
-    for id_,pred_ in zip(evaluation_ids,evaluation_y_pred_str):
-        csvw.writerow([id_,pred_])
-
+    	#save model
+    	f = file('model_best.save', 'wb')
+    	cPickle.dump(params, f, protocol=cPickle.HIGHEST_PROTOCOL)
+    	f.close()  		
+    if (epoch % 10 == 0) :
+        stop_time = time.clock()
+        print('Total time = %.2fmins'%((stop_time-start_time)/60.))
 stop_time = time.clock()
+print('=========Finish!!  Best accuracy=%f  Total time=%.2fmins========'%
+	(best_accuracy,(stop_time-start_time)/60.))
 
-print('Total time = %.2fmins'%((stop_time-start_time)/60.))
+
