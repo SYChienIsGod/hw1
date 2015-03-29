@@ -31,6 +31,9 @@ Ver. 0.03 by PHHung
 Ver. 0.03a by Jan
 1. replaced softmax layer by manual computation as requested 
     (no difference to theano's softmax but I left it in place as its probably faster)
+    
+Ver. 0.03b by Jan
+1. Switched to 39 Phonemes prediction
 """
 
 
@@ -66,7 +69,7 @@ training_data_sel = testing_data_sel==0
 training_data = raw_data[training_data_sel,:]
 testing_data = raw_data[testing_data_sel,:]
 
-f = file(paths.pathToSave48Labels,'rb')
+f = file(paths.pathToSave39Labels,'rb')
 raw_labels = cPickle.load(f)
 f.close()
 training_labels = raw_labels[training_data_sel]
@@ -88,7 +91,7 @@ NHidden_1 = 100
 NHidden_2 = 100
 NHidden_3 = 100
 NHidden_4 = 100
-NOut = 48
+NOut = 39
 
 L1_weighting = 0.001
 L2_weighting = 0.0001
@@ -232,7 +235,7 @@ test_on_testing_proc = theano.function(
 softmax_theano_test = theano.function(inputs=[idx], outputs=softmax,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size]})
 softmax_manual_test = theano.function(inputs=[idx], outputs=softmax_manual,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size]})
 
-NEpochs = 2000;
+NEpochs = 20;
 iteration = 0;
 
 #g_W_hidden = theano.function(
@@ -293,8 +296,9 @@ evaluation_y_pred = predict_proc()
 
 ph48_39 = numpy.loadtxt(paths.pathToMapPhones,dtype='str_',delimiter='\t')
 ph48_39_dict = dict(ph48_39)
-phi_48 = dict(zip(numpy.arange(0,48),ph48_39[:,0]))
-evaluation_y_pred_str = [ph48_39_dict[phi_48[pred]] for pred in evaluation_y_pred]
+phi_48 = dict(zip(numpy.arange(0,48),ph48_39[:,0])) # [0,47] -> 48 phonemes
+phi_39 = dict(zip(numpy.arange(0,39),list(set(ph48_39[:,1])))) # [0,38] -> 39 phonemes
+evaluation_y_pred_str = [phi_39[pred] for pred in evaluation_y_pred]
 import csv
 with open('prediction_3.csv','wb') as csvfile:
     csvw = csv.writer(csvfile,delimiter=',')
