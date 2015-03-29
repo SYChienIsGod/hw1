@@ -18,10 +18,13 @@ zero        0.586875                 0.622                (MFCC,2 layer)
 0.01-1      0.604                    X                    (FBANK,3 layer,ReLU) 
 0.01-2      0.614 (@2000 epoch)      X                    (FBANK,4 layer,ReLU)
 0.02        0.602 (@275  epoch)      X                    (FBANK,2 layer,PReLU)
-0.02-1      0.622 (@2000 epoch)      ?                    (FBANK,4 layer,PReLU)
-0.03        0.628*(@2000 epoch)      ?                    (FBANK,4 layer,PReLU,Momentum)
-0.03b	    0.616 (@20 epoch)        ?		          (as before,39 Phonemes)
-            (@2000 epoch doING) (accuracy is much higher!! 0.640 @ epoch 50)
+0.02-1      0.622 (@2000 epoch)      X                    (FBANK,4 layer,PReLU)
+0.03        0.628 (@2000 epoch)      0.63684              (FBANK,4 layer,PReLU,Momentum)
+0.03b	    0.671 (@2000 epoch)      0.65078              (as before,39 Phonemes)
+
+            Overfit ?! it might be a good sign XD
+            which mean that we are going to the next level of machine learning 
+            drop out, data augmentation(ex.MFCC+FBANK) my be a useful technique to prevent overfit    
 
 Zero edition: create by Jan 
 	it takes about 8 mins on GTX760 for 200 epoch 
@@ -46,8 +49,7 @@ Ver 0.03a: Modified by Jan
 
 Ver 0.03b: Modified by Jan
 	Prediction changed to 39 phonemes, should increase performance 
-        (could somebody with a fast machine test that with more epochs, please?)
-        PHHung : i am training now!
+        
 ==================================================================
 
 ToDo:
