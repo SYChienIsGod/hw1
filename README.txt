@@ -20,9 +20,8 @@ zero        0.586875                 0.622                (MFCC,2 layer)
 0.02        0.602 (@275  epoch)      X                    (FBANK,2 layer,PReLU)
 0.02-1      0.622 (@2000 epoch)      ?                    (FBANK,4 layer,PReLU)
 0.03        0.628*(@2000 epoch)      ?                    (FBANK,4 layer,PReLU,Momentum)
-0.03b		0.616 (@20 epoch)		 ?					  (FBANK,4 layer,PReLU,Momentum,39 Phonemes)
-
-*still growing (I'll train a 4000 epoch ver later)
+0.03b	    0.616 (@20 epoch)        ?		          (as before,39 Phonemes)
+            (@2000 epoch doING) (accuracy is much higher!! 0.640 @ epoch 50)
 
 Zero edition: create by Jan 
 	it takes about 8 mins on GTX760 for 200 epoch 
@@ -46,7 +45,9 @@ Ver 0.03a: Modified by Jan
         Built our own softmax function but left theano's in place as it's faster.
 
 Ver 0.03b: Modified by Jan
-		Prediction changed to 39 phonemes, should increase performance (could somebody with a fast machine test that with more epochs, please?)
+	Prediction changed to 39 phonemes, should increase performance 
+        (could somebody with a fast machine test that with more epochs, please?)
+        PHHung : i am training now!
 ==================================================================
 
 ToDo:
@@ -58,4 +59,5 @@ ToDo:
 >Use MFCC and FBANK together?
 
 Done:
+>momentum gd
 >softmax
