@@ -40,12 +40,17 @@ Ver 0.02: modify by HYTseng
 Ver 0.03: modify by PHHung
         it takes about 3 hr on GTX760 for 2000 epoch
         Major modify: momentum
+
+Ver 0.03a: Modified by Jan
+        Built our own softmax function but left theano's in place as it's faster.
 ==================================================================
 
 ToDo:
->softmax
 >learning rate decay
 >drop out
 >model average
 >matplot function
 >batch normalization?
+
+Done:
+>softmax

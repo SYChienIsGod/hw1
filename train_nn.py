@@ -27,6 +27,10 @@ maybe we should use FBANK instead of MFCC in the future
 
 Ver. 0.03 by PHHung
 1.add momentum_sgd
+
+Ver. 0.03a by Jan
+1. replaced softmax layer by manual computation as requested 
+    (no difference to theano's softmax but I left it in place as its probably faster)
 """
 
 
@@ -107,9 +111,9 @@ def Prelu(x, a):
 
 
 #PHHung : uniform distribution from 0 to sqrt(6/NIn+NHidden)?
-#         or from -sqrt(6/NIn+NHidden) to sqrt(6/NIn+NHidden)?
+#         or from -sqrt(6/NIn+NHidden) to sqrt(6/NIn+NHidden)? --> ReLU doesn't have a gradient once the input is negative... so I thought that may be useful (Jan)
 
-#%% Hidden layer 1
+# Hidden layer 1
 W_hidden_1 = theano.shared(
 	value=numpy.asarray(rng.uniform(
 		low=-numpy.sqrt(6./(NIn+NHidden_1)),high=numpy.sqrt(6./(NIn+NHidden_1)),
@@ -120,7 +124,7 @@ a_hidden_1 = theano.shared(
 	value=numpy.zeros((NHidden_1,),dtype=theano.config.floatX)+0.25,name='a_hidden_1',borrow=True)
 act_hidden_1 = Prelu(theano.tensor.dot(x,W_hidden_1)+b_hidden_1, a_hidden_1)
 
-#%% Hidden layer 2
+# Hidden layer 2
 W_hidden_2 = theano.shared(
 	value=numpy.asarray(rng.uniform(
 		low=-numpy.sqrt(6./(NHidden_1+NHidden_2)),high=numpy.sqrt(6./(NHidden_1+NHidden_2)),
@@ -131,7 +135,7 @@ a_hidden_2 = theano.shared(
 	value=numpy.zeros((NHidden_1,),dtype=theano.config.floatX)+0.25,name='a_hidden_2',borrow=True)
 act_hidden_2 = Prelu(theano.tensor.dot(act_hidden_1,W_hidden_2)+b_hidden_2, a_hidden_2)
 
-#%% Hidden layer 3
+# Hidden layer 3
 W_hidden_3 = theano.shared(
 	value=numpy.asarray(rng.uniform(
 		low=-numpy.sqrt(6./(NHidden_2+NHidden_3)),high=numpy.sqrt(6./(NHidden_2+NHidden_3)),
@@ -141,7 +145,7 @@ b_hidden_3 = theano.shared(
 a_hidden_3 = theano.shared(
         value=numpy.zeros((NHidden_3,),dtype=theano.config.floatX)+0.25,name='a_hidden_2',borrow=True)
 act_hidden_3 = Prelu(theano.tensor.dot(act_hidden_2,W_hidden_3)+b_hidden_3, a_hidden_3)
-#%% Hidden layer 4
+# Hidden layer 4
 W_hidden_4 = theano.shared(
 	value=numpy.asarray(rng.uniform(
 		low=-numpy.sqrt(6./(NHidden_3+NHidden_4)),high=numpy.sqrt(6./(NHidden_3+NHidden_4)),
@@ -152,7 +156,7 @@ a_hidden_4 = theano.shared(
         value=numpy.zeros((NHidden_4,),dtype=theano.config.floatX)+0.25,name='a_hidden_4',borrow=True)
 act_hidden_4 = Prelu(theano.tensor.dot(act_hidden_3,W_hidden_4)+b_hidden_4,a_hidden_4)
 
-#PHHung : initialize W with all zero?
+#PHHung : initialize W with all zero? --> It's the last layer, so I didn't observe a difference between 0 and random initialisation (Jan)
 #W_out = theano.shared(value=numpy.zeros((NHidden,NOut),dtype=theano.config.floatX),name='W_out',borrow=True)
 W_out = theano.shared(
 	value=numpy.asarray(rng.uniform(
@@ -161,7 +165,16 @@ W_out = theano.shared(
 b_out = theano.shared(
 	value=numpy.zeros((NOut,),dtype=theano.config.floatX),name='b_out',borrow=True)
 
-#PHHung : Can we use nnet.softmax? (I guess not... maybe we have to write one)
+#PHHung : Can we use nnet.softmax? (I guess not... maybe we have to write one) --> replaced (Jan)
+softmax_lin_act = theano.tensor.dot(act_hidden_4,W_out)+b_out # The linear activation just before softmax
+softmax_exp_act = theano.tensor.exp(softmax_lin_act-theano.tensor.max(softmax_lin_act,axis=1,keepdims=True)) 
+''' Exponentiation. The subtraction is a numerical trick. 
+    For each data point we subtract the maximum activation which is equal to 
+    dividing both the numerator and the denominator of the softmax fraction. 
+    Keepdims means that the result of the max function still has 39 (equal) entries
+    instead of a single entry. (Jan)
+'''
+softmax_manual = softmax_exp_act/theano.tensor.sum(softmax_exp_act,axis=1,keepdims=True) # The actual softmax fraction
 softmax = theano.tensor.nnet.softmax(theano.tensor.dot(act_hidden_4,W_out)+b_out)
 prediction = theano.tensor.argmax(softmax,axis=1)
 
@@ -216,6 +229,9 @@ test_on_testing_proc = theano.function(
 	inputs=[idx], outputs=errors(y), 
 	givens={x:testing_x_shared[idx*batch_size:(idx+1)*batch_size],y:testing_y_shared[idx*batch_size:(idx+1)*batch_size]})
 
+softmax_theano_test = theano.function(inputs=[idx], outputs=softmax,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size]})
+softmax_manual_test = theano.function(inputs=[idx], outputs=softmax_manual,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size]})
+
 NEpochs = 2000;
 iteration = 0;
 
@@ -233,6 +249,13 @@ for epoch in xrange(NEpochs):
     for minibatch_i in xrange(NBatches):
         iteration = iteration+1;
         avg_cost = training_proc(minibatch_i)  
+        
+        # Test that the softmax computations are correct: (Checked and difference is 0, Jan)
+        '''
+        softmax_theano_result = softmax_theano_test(minibatch_i)
+        softmax_manual_result = softmax_manual_test(minibatch_i)
+        print 'Softmax maximum absolute difference: %f' % numpy.max(numpy.abs(softmax_theano_result-softmax_manual_result))
+        '''
         #gradient_W_hidden = g_W_hidden(minibatch_i);
         #print 'Gradient W_hidden: %f' % numpy.sum(numpy.abs(gradient_W_hidden))
         #gradient_W_out = g_W_out(minibatch_i);
