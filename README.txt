@@ -43,8 +43,9 @@ Ver 0.03: modify by PHHung
 ==================================================================
 
 ToDo:
+>softmax
 >learning rate decay
 >drop out
 >model average
 >matplot function
-
+>batch normalization?
