@@ -12,13 +12,22 @@ f = file(paths.pathToSaveFBANKTest,'rb')
 evaluation_data = cPickle.load(f)
 f.close()
 
-f = file('model_best.save', 'rb')
+f = file('model_best690.save', 'rb')  # modify your model path here~
 params = cPickle.load(f)
 f.close()
 
-#scaling & mean
+f = file('normalize_parameter_scaling.save', 'rb')  # modify your model path here~
+raw_scaling = cPickle.load(f)
+f.close()
 
+f = file('normalize_parameter_means.save', 'rb')  # modify your model path here~
+raw_means = cPickle.load(f)
+f.close()
 
+[ W_hidden_1, b_hidden_1, a_hidden_1, W_hidden_2, b_hidden_2, a_hidden_2, 
+W_hidden_3, b_hidden_3,a_hidden_3, W_hidden_4, b_hidden_4, a_hidden_4,W_hidden_5, b_hidden_5, a_hidden_5, W_out, b_out] = params
+
+#Normalize test data by training data's mean and scale 
 for i in range(evaluation_data.shape[1]):
     scaling = raw_scaling[i]
     evaluation_data[:,i] = evaluation_data[:,i]/scaling
@@ -28,6 +37,24 @@ for i in range(evaluation_data.shape[1]):
 f = file(paths.pathToSaveTestIds,'rb')
 evaluation_ids = cPickle.load(f)
 f.close()
+
+#=========================rebuild model====================================================
+def Prelu(x, a):
+    return theano.tensor.switch(x<0, a*x, x)
+
+x = theano.tensor.matrix('x')
+
+act_hidden_1 = Prelu(theano.tensor.dot(x,W_hidden_1)+b_hidden_1, a_hidden_1)
+act_hidden_2 = Prelu(theano.tensor.dot(act_hidden_1,W_hidden_2)+b_hidden_2, a_hidden_2)
+act_hidden_3 = Prelu(theano.tensor.dot(act_hidden_2,W_hidden_3)+b_hidden_3, a_hidden_3)
+act_hidden_4 = Prelu(theano.tensor.dot(act_hidden_3,W_hidden_4)+b_hidden_4,a_hidden_4)
+act_hidden_5 = Prelu(theano.tensor.dot(act_hidden_4,W_hidden_5)+b_hidden_5,a_hidden_5)
+
+softmax = theano.tensor.nnet.softmax(theano.tensor.dot(act_hidden_5,W_out)+b_out)
+prediction = theano.tensor.argmax(softmax,axis=1)
+
+#===========================================================================================
+
 
 evaluation_x_shared = theano.shared(numpy.asarray(evaluation_data,dtype=theano.config.floatX),borrow=True)
 
@@ -47,6 +74,4 @@ with open('prediction_3.csv','wb') as csvfile:
     for id_,pred_ in zip(evaluation_ids,evaluation_y_pred_str):
         csvw.writerow([id_,pred_])
 
-stop_time = time.clock()
-
-print('Total time = %.2fmins'%((stop_time-start_time)/60.))
+print('Done~')

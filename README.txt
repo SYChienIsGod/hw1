@@ -1,13 +1,15 @@
 # hw1
 
 Usage
-
+To prepare dataset
 >> THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python read_data.py
+To train
 >> THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python train_nn.py
+To generate predict result
+>> THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python predict.py
 
 (choose CPU or GPU base on your device)
 
-To run 
 
 ========Version discription====================================== 
 
@@ -21,6 +23,8 @@ zero        0.586875                 0.622                (MFCC,2 layer)
 0.02-1      0.622 (@2000 epoch)      X                    (FBANK,4 layer,PReLU)
 0.03        0.628 (@2000 epoch)      0.63684              (FBANK,4 layer,PReLU,Momentum)
 0.03b	    0.671 (@2000 epoch)      0.65078              (as before,39 Phonemes)
+0.03c-1     0.682 (@1000 epoch)      X                    (as before,128/256/256/128)
+0.03c-2     0.690 (@279 epoch)       0.65481              (as 0.03b,5L 128/256/300/256/128)      
 
             Overfit ?! it might be a good sign XD
             which mean that we are going to the next level of machine learning 
@@ -43,13 +47,21 @@ Ver 0.02: modify by HYTseng
 Ver 0.03: modify by PHHung
         it takes about 3 hr on GTX760 for 2000 epoch
         Major modify: momentum
+	accuracy 0.636 on kaggle
 
 Ver 0.03a: Modified by Jan
         Built our own softmax function but left theano's in place as it's faster.
 
 Ver 0.03b: Modified by Jan
-	Prediction changed to 39 phonemes, should increase performance 
-        
+	Prediction changed to 39 phonemes, should increase performance  
+	accuracy 0.650 on kaggle
+
+Ver 0.03c: Modified by PHHung
+	1.save model as "model_best.save" when there is a better model
+	2.separate training & prediction to two different file 
+	=>you can terminate training process whenever you like, and then go for prediction
+	3.deeper & wider model
+    	    
 ==================================================================
 
 ToDo:
