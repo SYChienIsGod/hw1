@@ -23,13 +23,14 @@ zero        0.586875                 0.622            (MFCC,2 layer)
 0.02-1      0.622 (@2000 epoch)      X                (FBANK,4 layer,PReLU)
 0.03        0.628 (@2000 epoch)      0.63684          (as 0.02-1,Momentum)
 0.03b	    0.671 (@2000 epoch)      0.65078          (as 0.03,39 Phonemes)
-0.03c-1     0.682 (@1000 epoch)      X                (as 0.03b,4L wider node)
-0.03c-2     0.690 (@279 epoch)       0.65481          (as 0.03b,5L)      
+0.03c1      0.682 (@1000 epoch)      X                (as 0.03b,4L wider node)
+0.03c2      0.690 (@279 epoch)       0.65481          (as 0.03b,5L)    
+0.03d       0.692 (@378 epoch)       0.66202          (as 0.03c2,L2Regression)    
 
             Overfit ?! it might be a good sign XD
             which mean that we are going to the next level of machine learning 
             drop out, data augmentation(ex.MFCC+FBANK) 
-	    my be a useful technique to prevent overfit    
+	    my be an useful technique to prevent overfit    
 
 Zero edition: create by Jan 
 	it takes about 8 mins on GTX760 for 200 epoch 
@@ -65,6 +66,9 @@ Ver 0.03c: Modified by PHHung
           and then go for prediction
 	3.deeper & wider model
     	    
+Ver 0.03d: Modified by PHHung
+	add L2 regression in cost function,hope to prevent overfiting
+
 ==================================================================
 
 ToDo:

@@ -25,6 +25,12 @@ Ver. 0.03a by Jan
     
 Ver. 0.03b by Jan
 	1. Switched to 39 Phonemes prediction
+
+Ver. 0.03c by PHHung
+    deeper and wider network model
+
+Ver. 0.03d by PHHung
+    add L2 regression
 """
 
 
@@ -205,9 +211,9 @@ def errors(label):
 
 
 #L1_reg = abs(W_hidden).sum()+abs(W_out).sum()
-#L2_reg = (W_hidden ** 2).sum()+(W_out ** 2).sum()
+L2_reg = (W_hidden_1 ** 2).sum()+(W_hidden_2 ** 2).sum()+(W_hidden_3 ** 2).sum()+(W_hidden_4 ** 2).sum()+(W_hidden_5 ** 2).sum()+(W_out ** 2).sum()
 
-cost_function = NLL(y) # +L1_reg*L1_weighting+L2_reg*L2_weighting
+cost_function = NLL(y) + L2_reg*L2_weighting # +L1_reg*L1_weighting+L2_reg*L2_weighting
 
 params = [ W_hidden_1, b_hidden_1, a_hidden_1, W_hidden_2, b_hidden_2, a_hidden_2, W_hidden_3, b_hidden_3,a_hidden_3, 
 W_hidden_4, b_hidden_4, a_hidden_4, W_hidden_5, b_hidden_5, a_hidden_5, W_out, b_out]
