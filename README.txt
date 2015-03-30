@@ -15,20 +15,21 @@ To generate predict result
 
 Table
 Version     Validate accuracy        Submmit accuracy     
-zero        0.586875                 0.622                (MFCC,2 layer) 
-0.01        0.595                    0.626                (MFCC,2 layer,ReLU) 
-0.01-1      0.604                    X                    (FBANK,3 layer,ReLU) 
-0.01-2      0.614 (@2000 epoch)      X                    (FBANK,4 layer,ReLU)
-0.02        0.602 (@275  epoch)      X                    (FBANK,2 layer,PReLU)
-0.02-1      0.622 (@2000 epoch)      X                    (FBANK,4 layer,PReLU)
-0.03        0.628 (@2000 epoch)      0.63684              (FBANK,4 layer,PReLU,Momentum)
-0.03b	    0.671 (@2000 epoch)      0.65078              (as before,39 Phonemes)
-0.03c-1     0.682 (@1000 epoch)      X                    (as before,128/256/256/128)
-0.03c-2     0.690 (@279 epoch)       0.65481              (as 0.03b,5L 128/256/300/256/128)      
+zero        0.586875                 0.622            (MFCC,2 layer) 
+0.01        0.595                    0.626            (MFCC,2 layer,ReLU) 
+0.01-1      0.604                    X                (FBANK,3 layer,ReLU) 
+0.01-2      0.614 (@2000 epoch)      X                (FBANK,4 layer,ReLU)
+0.02        0.602 (@275  epoch)      X                (FBANK,2 layer,PReLU)
+0.02-1      0.622 (@2000 epoch)      X                (FBANK,4 layer,PReLU)
+0.03        0.628 (@2000 epoch)      0.63684          (as 0.02-1,Momentum)
+0.03b	    0.671 (@2000 epoch)      0.65078          (as 0.03,39 Phonemes)
+0.03c-1     0.682 (@1000 epoch)      X                (as 0.03b,4L wider node)
+0.03c-2     0.690 (@279 epoch)       0.65481          (as 0.03b,5L)      
 
             Overfit ?! it might be a good sign XD
             which mean that we are going to the next level of machine learning 
-            drop out, data augmentation(ex.MFCC+FBANK) my be a useful technique to prevent overfit    
+            drop out, data augmentation(ex.MFCC+FBANK) 
+	    my be a useful technique to prevent overfit    
 
 Zero edition: create by Jan 
 	it takes about 8 mins on GTX760 for 200 epoch 
@@ -36,12 +37,13 @@ Zero edition: create by Jan
 	accuracy 0.622 
 
 Ver 0.01: modify by PHHung 
-	it takes about 50 mins on GTX760 for 200 epoch (because of the smaller batch size) 
+	it takes about 50 mins on GTX760 for 200 epoch 
 	prediction_4.csv on kaggle
 	accuracy 0.626 
 
 Ver 0.02: modify by HYTseng
-	I train it on CPU XD. I would update the timing and accuracy when I get the GPU computation power.
+	I train it on CPU XD. 
+I would update the timing and accuracy when I get the GPU computation power.
         Major modify: PReLU: http://arxiv.org/pdf/1502.01852v1.pdf
 
 Ver 0.03: modify by PHHung
@@ -59,7 +61,8 @@ Ver 0.03b: Modified by Jan
 Ver 0.03c: Modified by PHHung
 	1.save model as "model_best.save" when there is a better model
 	2.separate training & prediction to two different file 
-	=>you can terminate training process whenever you like, and then go for prediction
+	=>you can terminate training process whenever you like, 
+          and then go for prediction
 	3.deeper & wider model
     	    
 ==================================================================
