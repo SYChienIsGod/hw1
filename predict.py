@@ -1,6 +1,7 @@
 #
 #After training, use predict.py to produce submission result
 #
+# ver 0.00a by Tseng, input with FBANK and MFCC
 
 import paths
 import time
@@ -11,6 +12,10 @@ import theano
 f = file(paths.pathToSaveFBANKTest,'rb')
 evaluation_data = cPickle.load(f)
 f.close()
+
+g = file(paths.pathToSaveMFCCTest,'rb')
+evaluation_data_1 = cPickle.load(g)
+g.close()
 
 f = file('model_best690.save', 'rb')  # modify your model path here~
 params = cPickle.load(f)
@@ -26,6 +31,8 @@ f.close()
 
 [ W_hidden_1, b_hidden_1, a_hidden_1, W_hidden_2, b_hidden_2, a_hidden_2, 
 W_hidden_3, b_hidden_3,a_hidden_3, W_hidden_4, b_hidden_4, a_hidden_4,W_hidden_5, b_hidden_5, a_hidden_5, W_out, b_out] = params
+
+evaluation_data = numpy.append(evaluation_data[:], evaluation_data_1[:], 1)
 
 #Normalize test data by training data's mean and scale 
 for i in range(evaluation_data.shape[1]):
