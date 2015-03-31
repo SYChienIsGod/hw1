@@ -28,9 +28,12 @@ zero        0.586875                 0.622            (MFCC,2 layer)
 0.03d       0.692 (@378 epoch)       0.66202          (as 0.03c2,L2Regression)
 0.03d1      0.700 (@511 epoch)       ?                (as 0.03d,7L)
 0.03e       0.692 (@328 epoch)       0.66081          (as 0.03e?,FBANK+MFCC)
-0.03f       0.706 (@551 epoch)       ?                (as 0.03e,7L,DropOut)   
-0.03g       ?                        ?                (as 0.03f,LR decay)
+0.03e1      0.706 (@551 epoch)       ?                (as 0.03e,7L)   
+0.03g       ?                        ?                (as 0.03e1,LR decay)
   
+Sorry that there is still some bug in DropOut so I remove it in 0.03g
+I'll fix it tomorrow~
+
 
 Zero edition: create by Jan 
 	it takes about 8 mins on GTX760 for 200 epoch 
@@ -75,7 +78,7 @@ Ver 0.03e: by HYTseng
 	input with FBANK+MFCC, still overfitting, time to think about drop out?
 
 Ver 0.03f: Modified by PHHung
-	add DropOut : http://arxiv.org/pdf/1207.0580.pdf
+	//add DropOut : http://arxiv.org/pdf/1207.0580.pdf
 
 Ver 0.03g: Jan / fix for the learning rate decay
 
