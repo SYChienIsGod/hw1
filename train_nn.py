@@ -27,6 +27,8 @@ Ver. 0.03d by PHHung
     add L2 regression
 Ver. 0.03e by HYTseng
     input with FBANK and MFCC, add learning_rate decay
+Ver. 0.03f by Jan
+    fix for the learning rate decay
 """
 
 
@@ -225,8 +227,8 @@ W_hidden_4, b_hidden_4, a_hidden_4, W_hidden_5, b_hidden_5, a_hidden_5, W_out, b
 #    grads.append(theano.tensor.grad(cost_function,p))
 
 #PHHung : LR = 0.2 may be a litte too big!!     
-Learning_Rate = 0.01 
-Learning_Rate_Decay = 0.9999
+Learning_Rate = numpy.float32(0.01)
+Learning_Rate_Decay = numpy.float32(0.9999)
 '''
 #PHHung : vanilla gd
 updates = []
@@ -234,19 +236,23 @@ for p,g in zip(params,grads):
     #Learning_Rate = Learning_Rate -0.02
     updates.append((p,p-Learning_Rate * g))
 '''
+# Create a shared variable for the learning rate
+learning_rate_theano = theano.shared(Learning_Rate, name='learning_rate')
 #PHHung : momentum gd 
-def momentum_sgd(cost, params, learning_rate, momentum):
+def momentum_sgd(cost, params, momentum):
     assert momentum < 1 and momentum >= 0
     updates = []
     for param in params:
         param_update = theano.shared(param.get_value()*0., broadcastable=param.broadcastable)
-        updates.append((param, param - learning_rate*param_update))
+        updates.append((param, param - learning_rate_theano*param_update))
         updates.append((param_update, momentum*param_update + (1. - momentum)*theano.tensor.grad(cost, param)))
     return updates
-
+    
+update_proc = momentum_sgd(cost_function,params,0.8)
+update_proc.append((learning_rate_theano, learning_rate_theano * Learning_Rate_Decay))  
 
 training_proc = theano.function(
-	inputs=[idx], outputs=cost_function, updates=momentum_sgd(cost_function,params,Learning_Rate,0.8),
+	inputs=[idx], outputs=cost_function, updates=update_proc,
 	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]})
 
 test_on_training_proc = theano.function(
@@ -297,7 +303,7 @@ for epoch in xrange(NEpochs):
     test_errors = [test_on_testing_proc(i) for i in xrange(NTestBatches)]
     
     current_accuracy = numpy.mean(test_errors)
-    print 'Epoch %i Current Accuracy: %f , learning rate : %f' % (epoch,current_accuracy,Learning_Rate)
+    print 'Epoch %i Current Accuracy: %f , learning rate : %f' % (epoch,current_accuracy,learning_rate_theano.get_value())
     if best_accuracy < current_accuracy :
     	best_accuracy = current_accuracy
     	best_accuracy_epoch = epoch
@@ -312,7 +318,7 @@ for epoch in xrange(NEpochs):
         print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         print('Current best accuracy=%f @epoch%i Total time=%.2fmins'%(best_accuracy,best_accuracy_epoch,(stop_time-start_time)/60.))
         print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-    Learning_Rate = Learning_Rate*Learning_Rate_Decay;
+        
 
 stop_time = time.clock()
 print('=========Finish!!  Best accuracy=%f @epoch%i Total time=%.2fmins========'%

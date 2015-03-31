@@ -76,10 +76,11 @@ Ver 0.03e: by HYTseng
 	(need modify both train_nn.py and predict.py)
 	input with FBANK+MFCC, still overfitting, time to think about drop out?
 
+Ver 0.03f: Jan / fix for the learning rate decay
+
 ==================================================================
 
 ToDo:
->learning rate decay
 >drop out
 >model average
 >matplot function
@@ -89,3 +90,4 @@ ToDo:
 Done:
 >momentum gd
 >softmax
+>learning rate decay
