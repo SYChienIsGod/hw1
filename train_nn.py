@@ -2,7 +2,9 @@
 
 """
 Ver. zero by Jan
+
 Ver. 0.01 by PHHung
+
 Ver. 0.02 by HYTseng
 	some modification
 	1.use relu instead of tanh -> use Prelu instead
@@ -13,20 +15,28 @@ Ver. 0.02 by HYTseng
 	5.add some comment (something we should discuss)
 	6.add timer to record computation time
 	7.display accuracy @every epoch (instead of @every 200 iteration) 
+
 Ver. 0.03 by PHHung
 	1.add momentum_sgd
+
 Ver. 0.03a by Jan
 	1. replaced softmax layer by manual computation as requested 
     (no difference to theano's softmax but I left it in place as its probably faster)
     
 Ver. 0.03b by Jan
 	1. Switched to 39 Phonemes prediction
+
 Ver. 0.03c by PHHung
     deeper and wider network model
+
 Ver. 0.03d by PHHung
     add L2 regression
+
 Ver. 0.03e by HYTseng
-    input with FBANK and MFCC, add learning_rate decay
+    input with FBANK and MFCC
+
+Ver. 0.03f by PHHung
+	add DropOut :http://arxiv.org/pdf/1207.0580.pdf
 """
 
 
@@ -35,24 +45,26 @@ import time
 import numpy
 import cPickle
 import theano
-from sklearn import decomposition
+import theano.tensor as T
+
 #%% Read pickled data
 
 start_time = time.clock()
 
 rng = numpy.random.RandomState(6789)
+srng = theano.tensor.shared_randomstreams.RandomStreams(rng.randint(999999))
+
 f = file(paths.pathToSaveFBANKTrain,'rb')
 raw_data = cPickle.load(f)
 f.close()
+f = file(paths.pathToSaveMFCCTrain,'rb')
+raw_data_1 = cPickle.load(f)
+f.close()
 
-g = file(paths.pathToSaveMFCCTrain,'rb')
-raw_data_1 = cPickle.load(g)
-g.close()
+raw_data = numpy.append(raw_data[:], raw_data_1[:], 1)
 
 raw_scaling = []
 raw_means = []
-
-raw_data = numpy.append(raw_data[:], raw_data_1[:], 1)
 
 # Data normalize
 for i in range(raw_data.shape[1]):
@@ -96,9 +108,11 @@ testing_y_shared = theano.tensor.cast(
 NIn = raw_data.shape[1] # FBANK:69 MFCC:39
 NHidden_1 = 128
 NHidden_2 = 256
-NHidden_3 = 300
-NHidden_4 = 256
-NHidden_5 = 128
+NHidden_3 = 512
+NHidden_4 = 1024
+NHidden_5 = 512
+NHidden_6 = 256
+NHidden_7 = 128
 NOut = 39
 
 L1_weighting = 0.001
@@ -116,14 +130,30 @@ x = theano.tensor.matrix('x')
 y = theano.tensor.ivector('y')
 idx = theano.tensor.lscalar('idx')
 
-#PHHung relu is your good friend~
 def Prelu(x, a):
     return theano.tensor.switch(x<0, a*x, x)
 
+def relu(x):
+    return theano.tensor.switch(x<0, 0, x)
+
+def drop(input, p=0.5, rng=rng):     
+    mask = srng.binomial(n=1, p=p, size=input.shape, dtype=theano.config.floatX)
+    return input * mask
 
 #PHHung : uniform distribution from 0 to sqrt(6/NIn+NHidden)?
 #         or from -sqrt(6/NIn+NHidden) to sqrt(6/NIn+NHidden)? --> ReLU doesn't have a gradient once the input is negative... so I thought that may be useful (Jan)
 #PHHung : z=w*x+b , the input of activate function is z , but here we are initializing w , I thought that is different thing (w & z)
+
+#To Drop or not to Drop, that is the question XD
+dropout_1=0
+dropout_2=0
+dropout_3=1
+dropout_4=1
+dropout_5=1
+dropout_6=1
+dropout_7=1
+
+p=0.5
 
 # Hidden layer 1
 W_hidden_1 = theano.shared(
@@ -135,6 +165,8 @@ b_hidden_1 = theano.shared(
 a_hidden_1 = theano.shared(
 	value=numpy.zeros((NHidden_1,),dtype=theano.config.floatX)+0.25,name='a_hidden_1',borrow=True)
 act_hidden_1 = Prelu(theano.tensor.dot(x,W_hidden_1)+b_hidden_1, a_hidden_1)
+drop_output_1 = drop(numpy.cast[theano.config.floatX](1./p) * act_hidden_1)
+output_1 = T.switch(T.neq(dropout_1, 0), drop_output_1, act_hidden_1)
 
 # Hidden layer 2
 W_hidden_2 = theano.shared(
@@ -145,7 +177,9 @@ b_hidden_2 = theano.shared(
 	value=numpy.zeros((NHidden_2,),dtype=theano.config.floatX),name='b_hidden_2',borrow=True)
 a_hidden_2 = theano.shared(
 	value=numpy.zeros((NHidden_2,),dtype=theano.config.floatX)+0.25,name='a_hidden_2',borrow=True)
-act_hidden_2 = Prelu(theano.tensor.dot(act_hidden_1,W_hidden_2)+b_hidden_2, a_hidden_2)
+act_hidden_2 = Prelu(theano.tensor.dot(output_1,W_hidden_2)+b_hidden_2, a_hidden_2)
+drop_output_2 = drop(numpy.cast[theano.config.floatX](1./p) * act_hidden_2)
+output_2 = T.switch(T.neq(dropout_2, 0), drop_output_2, act_hidden_2)
 
 # Hidden layer 3
 W_hidden_3 = theano.shared(
@@ -157,6 +191,8 @@ b_hidden_3 = theano.shared(
 a_hidden_3 = theano.shared(
         value=numpy.zeros((NHidden_3,),dtype=theano.config.floatX)+0.25,name='a_hidden_2',borrow=True)
 act_hidden_3 = Prelu(theano.tensor.dot(act_hidden_2,W_hidden_3)+b_hidden_3, a_hidden_3)
+drop_output_3 = drop(numpy.cast[theano.config.floatX](1./p) * act_hidden_3)
+output_3 = T.switch(T.neq(dropout_3, 0), drop_output_3, act_hidden_3)
 
 # Hidden layer 4
 W_hidden_4 = theano.shared(
@@ -168,6 +204,8 @@ b_hidden_4 = theano.shared(
 a_hidden_4 = theano.shared(
         value=numpy.zeros((NHidden_4,),dtype=theano.config.floatX)+0.25,name='a_hidden_4',borrow=True)
 act_hidden_4 = Prelu(theano.tensor.dot(act_hidden_3,W_hidden_4)+b_hidden_4,a_hidden_4)
+drop_output_4= drop(numpy.cast[theano.config.floatX](1./p) * act_hidden_4)
+output_4 = T.switch(T.neq(dropout_4, 0), drop_output_4, act_hidden_4)
 
 # Hidden layer 5
 W_hidden_5 = theano.shared(
@@ -179,20 +217,47 @@ b_hidden_5 = theano.shared(
 a_hidden_5 = theano.shared(
         value=numpy.zeros((NHidden_5,),dtype=theano.config.floatX)+0.25,name='a_hidden_5',borrow=True)
 act_hidden_5 = Prelu(theano.tensor.dot(act_hidden_4,W_hidden_5)+b_hidden_5,a_hidden_5)
+drop_output_5 = drop(numpy.cast[theano.config.floatX](1./p) * act_hidden_5)
+output_5 = T.switch(T.neq(dropout_5, 0), drop_output_5, act_hidden_5)
+
+# Hidden layer 6
+W_hidden_6 = theano.shared(
+	value=numpy.asarray(rng.uniform(
+		low=-numpy.sqrt(6./(NHidden_5+NHidden_6)),high=numpy.sqrt(6./(NHidden_5+NHidden_6)),
+		size=(NHidden_5,NHidden_6)),dtype=theano.config.floatX),name='W_hidden_6',borrow=True)
+b_hidden_6 = theano.shared(
+	value=numpy.zeros((NHidden_6,),dtype=theano.config.floatX),name='b_hidden_6',borrow=True)
+a_hidden_6 = theano.shared(
+        value=numpy.zeros((NHidden_6,),dtype=theano.config.floatX)+0.25,name='a_hidden_6',borrow=True)
+act_hidden_6 = Prelu(theano.tensor.dot(act_hidden_5,W_hidden_6)+b_hidden_6,a_hidden_6)
+drop_output_6 = drop(numpy.cast[theano.config.floatX](1./p) * act_hidden_6)
+output_6 = T.switch(T.neq(dropout_6, 0), drop_output_6, act_hidden_6)
 
 
+# Hidden layer 7
+W_hidden_7 = theano.shared(
+	value=numpy.asarray(rng.uniform(
+		low=-numpy.sqrt(6./(NHidden_6+NHidden_7)),high=numpy.sqrt(6./(NHidden_6+NHidden_7)),
+		size=(NHidden_6,NHidden_7)),dtype=theano.config.floatX),name='W_hidden_7',borrow=True)
+b_hidden_7 = theano.shared(
+	value=numpy.zeros((NHidden_7,),dtype=theano.config.floatX),name='b_hidden_7',borrow=True)
+a_hidden_7 = theano.shared(
+        value=numpy.zeros((NHidden_7,),dtype=theano.config.floatX)+0.25,name='a_hidden_7',borrow=True)
+act_hidden_7 = Prelu(theano.tensor.dot(act_hidden_6,W_hidden_7)+b_hidden_7,a_hidden_7)
+drop_output_7 = drop(numpy.cast[theano.config.floatX](1./p) * act_hidden_7)
+output_7 = T.switch(T.neq(dropout_7, 0), drop_output_7, act_hidden_7)
 
 #PHHung : initialize W with all zero? --> It's the last layer, so I didn't observe a difference between 0 and random initialisation (Jan)
 #W_out = theano.shared(value=numpy.zeros((NHidden,NOut),dtype=theano.config.floatX),name='W_out',borrow=True)
 W_out = theano.shared(
 	value=numpy.asarray(rng.uniform(
-		low=-numpy.sqrt(6./(NHidden_5+NOut)),high=numpy.sqrt(6./(NHidden_5+NOut)),
-		size=(NHidden_5,NOut)),dtype=theano.config.floatX),name='W_out',borrow=True)
+		low=-numpy.sqrt(6./(NHidden_7+NOut)),high=numpy.sqrt(6./(NHidden_7+NOut)),
+		size=(NHidden_7,NOut)),dtype=theano.config.floatX),name='W_out',borrow=True)
 b_out = theano.shared(
 	value=numpy.zeros((NOut,),dtype=theano.config.floatX),name='b_out',borrow=True)
 
 #PHHung : Can we use nnet.softmax? (I guess not... maybe we have to write one) --> replaced (Jan)
-softmax_lin_act = theano.tensor.dot(act_hidden_5,W_out)+b_out # The linear activation just before softmax
+softmax_lin_act = theano.tensor.dot(act_hidden_7,W_out)+b_out # The linear activation just before softmax
 softmax_exp_act = theano.tensor.exp(softmax_lin_act-theano.tensor.max(softmax_lin_act,axis=1,keepdims=True)) 
 ''' Exponentiation. The subtraction is a numerical trick. 
     For each data point we subtract the maximum activation which is equal to 
@@ -201,7 +266,7 @@ softmax_exp_act = theano.tensor.exp(softmax_lin_act-theano.tensor.max(softmax_li
     instead of a single entry. (Jan)
 '''
 softmax_manual = softmax_exp_act/theano.tensor.sum(softmax_exp_act,axis=1,keepdims=True) # The actual softmax fraction
-softmax = theano.tensor.nnet.softmax(theano.tensor.dot(act_hidden_5,W_out)+b_out)
+softmax = theano.tensor.nnet.softmax(theano.tensor.dot(act_hidden_7,W_out)+b_out)
 prediction = theano.tensor.argmax(softmax,axis=1)
 
 def NLL(label):
@@ -213,28 +278,15 @@ def errors(label):
 
 
 #L1_reg = abs(W_hidden).sum()+abs(W_out).sum()
-L2_reg = (W_hidden_1 ** 2).sum()+(W_hidden_2 ** 2).sum()+(W_hidden_3 ** 2).sum()+(W_hidden_4 ** 2).sum()+(W_hidden_5 ** 2).sum()+(W_out ** 2).sum()
+L2_reg = (W_hidden_1 ** 2).sum()+(W_hidden_2 ** 2).sum()+(W_hidden_3 ** 2).sum()+(W_hidden_4 ** 2).sum()+(W_hidden_5 ** 2).sum()+(W_hidden_6 ** 2).sum()+(W_hidden_7 ** 2).sum()+(W_out ** 2).sum()
 
 cost_function = NLL(y) + L2_reg*L2_weighting # +L1_reg*L1_weighting+L2_reg*L2_weighting
 
 params = [ W_hidden_1, b_hidden_1, a_hidden_1, W_hidden_2, b_hidden_2, a_hidden_2, W_hidden_3, b_hidden_3,a_hidden_3, 
-W_hidden_4, b_hidden_4, a_hidden_4, W_hidden_5, b_hidden_5, a_hidden_5, W_out, b_out]
-#params = [ W_hidden_1, b_hidden_1, a_hidden_1, W_hidden_2, b_hidden_2, a_hidden_2, W_out, b_out]
-#grads = []
-#for p in params:
-#    grads.append(theano.tensor.grad(cost_function,p))
-
-#PHHung : LR = 0.2 may be a litte too big!!     
+W_hidden_4, b_hidden_4, a_hidden_4, W_hidden_5, b_hidden_5, a_hidden_5, W_hidden_6, b_hidden_6, a_hidden_6, W_hidden_7, b_hidden_7, a_hidden_7, W_out, b_out]
+   
 Learning_Rate = 0.01 
-Learning_Rate_Decay = 0.9999
-'''
-#PHHung : vanilla gd
-updates = []
-for p,g in zip(params,grads):
-    #Learning_Rate = Learning_Rate -0.02
-    updates.append((p,p-Learning_Rate * g))
-'''
-#PHHung : momentum gd 
+
 def momentum_sgd(cost, params, learning_rate, momentum):
     assert momentum < 1 and momentum >= 0
     updates = []
@@ -260,18 +312,12 @@ test_on_testing_proc = theano.function(
 softmax_theano_test = theano.function(inputs=[idx], outputs=softmax,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size]})
 softmax_manual_test = theano.function(inputs=[idx], outputs=softmax_manual,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size]})
 
-NEpochs =400;
+NEpochs =4000;
 iteration = 0;
-
-#g_W_hidden = theano.function(
-#	inputs=[idx],outputs=grads[0],
-#	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]});
-#g_W_out = theano.function(
-#	inputs=[idx],outputs=grads[0],
-#	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]});
 
 best_accuracy = 0
 best_accuracy_epoch =0 
+
 #%%
 for epoch in xrange(NEpochs):
     if epoch == 0:
@@ -286,18 +332,11 @@ for epoch in xrange(NEpochs):
         softmax_manual_result = softmax_manual_test(minibatch_i)
         print 'Softmax maximum absolute difference: %f' % numpy.max(numpy.abs(softmax_theano_result-softmax_manual_result))
         '''
-        #gradient_W_hidden = g_W_hidden(minibatch_i);
-        #print 'Gradient W_hidden: %f' % numpy.sum(numpy.abs(gradient_W_hidden))
-        #gradient_W_out = g_W_out(minibatch_i);
-        #print 'Gradient W_out: %f' % numpy.sum(numpy.abs(gradient_W_out))
-        #if iteration % 200 == 0:
-        #    print 'Epoch %i, Minibatch %i' % (epoch,minibatch_i)
-        #    test_errors = [test_on_testing_proc(i) for i in xrange(NTestBatches)]
-        #    print '                         Current Accuracy: %f ' % numpy.mean(test_errors)
+
     test_errors = [test_on_testing_proc(i) for i in xrange(NTestBatches)]
     
     current_accuracy = numpy.mean(test_errors)
-    print 'Epoch %i Current Accuracy: %f , learning rate : %f' % (epoch,current_accuracy,Learning_Rate)
+    print 'Epoch %i Current Accuracy: %f ' % (epoch,current_accuracy)
     if best_accuracy < current_accuracy :
     	best_accuracy = current_accuracy
     	best_accuracy_epoch = epoch
@@ -305,15 +344,16 @@ for epoch in xrange(NEpochs):
     	#save best model
     	f = file('model_best.save', 'wb')
     	cPickle.dump(params, f, protocol=cPickle.HIGHEST_PROTOCOL)
-    	f.close()
+    	f.close()  		
     if (epoch % 10 == 0) :
         stop_time = time.clock()
 
         print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         print('Current best accuracy=%f @epoch%i Total time=%.2fmins'%(best_accuracy,best_accuracy_epoch,(stop_time-start_time)/60.))
         print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-    Learning_Rate = Learning_Rate*Learning_Rate_Decay;
 
 stop_time = time.clock()
 print('=========Finish!!  Best accuracy=%f @epoch%i Total time=%.2fmins========'%
 	(best_accuracy,best_accuracy_epoch,(stop_time-start_time)/60.))
+
+
