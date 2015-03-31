@@ -49,6 +49,7 @@ import numpy
 import cPickle
 import theano
 import theano.tensor as T
+import numpy as np
 
 #%% Read pickled data
 
@@ -148,14 +149,7 @@ def drop(input, p=0.5, rng=rng):
 #PHHung : z=w*x+b , the input of activate function is z , but here we are initializing w , I thought that is different thing (w & z)
 
 #To Drop or not to Drop, that is the question XD
-dropout_1=0
-dropout_2=0
-dropout_3=1
-dropout_4=1
-dropout_5=1
-dropout_6=1
-dropout_7=1
-
+dropout=T.iscalar('dropout')
 p=0.5
 
 # Hidden layer 1
@@ -169,7 +163,7 @@ a_hidden_1 = theano.shared(
 	value=numpy.zeros((NHidden_1,),dtype=theano.config.floatX)+0.25,name='a_hidden_1',borrow=True)
 act_hidden_1 = Prelu(theano.tensor.dot(x,W_hidden_1)+b_hidden_1, a_hidden_1)
 drop_output_1 = drop(numpy.cast[theano.config.floatX](1./p) * act_hidden_1)
-output_1 = T.switch(T.neq(dropout_1, 0), drop_output_1, act_hidden_1)
+output_1 = T.switch(T.neq(dropout, 0), drop_output_1, act_hidden_1)
 
 # Hidden layer 2
 W_hidden_2 = theano.shared(
@@ -182,7 +176,7 @@ a_hidden_2 = theano.shared(
 	value=numpy.zeros((NHidden_2,),dtype=theano.config.floatX)+0.25,name='a_hidden_2',borrow=True)
 act_hidden_2 = Prelu(theano.tensor.dot(output_1,W_hidden_2)+b_hidden_2, a_hidden_2)
 drop_output_2 = drop(numpy.cast[theano.config.floatX](1./p) * act_hidden_2)
-output_2 = T.switch(T.neq(dropout_2, 0), drop_output_2, act_hidden_2)
+output_2 = T.switch(T.neq(dropout, 0), drop_output_2, act_hidden_2)
 
 # Hidden layer 3
 W_hidden_3 = theano.shared(
@@ -195,7 +189,7 @@ a_hidden_3 = theano.shared(
         value=numpy.zeros((NHidden_3,),dtype=theano.config.floatX)+0.25,name='a_hidden_2',borrow=True)
 act_hidden_3 = Prelu(theano.tensor.dot(act_hidden_2,W_hidden_3)+b_hidden_3, a_hidden_3)
 drop_output_3 = drop(numpy.cast[theano.config.floatX](1./p) * act_hidden_3)
-output_3 = T.switch(T.neq(dropout_3, 0), drop_output_3, act_hidden_3)
+output_3 = T.switch(T.neq(dropout, 0), drop_output_3, act_hidden_3)
 
 # Hidden layer 4
 W_hidden_4 = theano.shared(
@@ -208,7 +202,7 @@ a_hidden_4 = theano.shared(
         value=numpy.zeros((NHidden_4,),dtype=theano.config.floatX)+0.25,name='a_hidden_4',borrow=True)
 act_hidden_4 = Prelu(theano.tensor.dot(act_hidden_3,W_hidden_4)+b_hidden_4,a_hidden_4)
 drop_output_4= drop(numpy.cast[theano.config.floatX](1./p) * act_hidden_4)
-output_4 = T.switch(T.neq(dropout_4, 0), drop_output_4, act_hidden_4)
+output_4 = T.switch(T.neq(dropout, 0), drop_output_4, act_hidden_4)
 
 # Hidden layer 5
 W_hidden_5 = theano.shared(
@@ -221,7 +215,7 @@ a_hidden_5 = theano.shared(
         value=numpy.zeros((NHidden_5,),dtype=theano.config.floatX)+0.25,name='a_hidden_5',borrow=True)
 act_hidden_5 = Prelu(theano.tensor.dot(act_hidden_4,W_hidden_5)+b_hidden_5,a_hidden_5)
 drop_output_5 = drop(numpy.cast[theano.config.floatX](1./p) * act_hidden_5)
-output_5 = T.switch(T.neq(dropout_5, 0), drop_output_5, act_hidden_5)
+output_5 = T.switch(T.neq(dropout, 0), drop_output_5, act_hidden_5)
 
 # Hidden layer 6
 W_hidden_6 = theano.shared(
@@ -234,7 +228,7 @@ a_hidden_6 = theano.shared(
         value=numpy.zeros((NHidden_6,),dtype=theano.config.floatX)+0.25,name='a_hidden_6',borrow=True)
 act_hidden_6 = Prelu(theano.tensor.dot(act_hidden_5,W_hidden_6)+b_hidden_6,a_hidden_6)
 drop_output_6 = drop(numpy.cast[theano.config.floatX](1./p) * act_hidden_6)
-output_6 = T.switch(T.neq(dropout_6, 0), drop_output_6, act_hidden_6)
+output_6 = T.switch(T.neq(dropout, 0), drop_output_6, act_hidden_6)
 
 
 # Hidden layer 7
@@ -248,7 +242,7 @@ a_hidden_7 = theano.shared(
         value=numpy.zeros((NHidden_7,),dtype=theano.config.floatX)+0.25,name='a_hidden_7',borrow=True)
 act_hidden_7 = Prelu(theano.tensor.dot(act_hidden_6,W_hidden_7)+b_hidden_7,a_hidden_7)
 drop_output_7 = drop(numpy.cast[theano.config.floatX](1./p) * act_hidden_7)
-output_7 = T.switch(T.neq(dropout_7, 0), drop_output_7, act_hidden_7)
+output_7 = T.switch(T.neq(dropout, 0), drop_output_7, act_hidden_7)
 
 #PHHung : initialize W with all zero? --> It's the last layer, so I didn't observe a difference between 0 and random initialisation (Jan)
 #W_out = theano.shared(value=numpy.zeros((NHidden,NOut),dtype=theano.config.floatX),name='W_out',borrow=True)
@@ -295,7 +289,7 @@ params = [ W_hidden_1, b_hidden_1, a_hidden_1, W_hidden_2, b_hidden_2, a_hidden_
 
 #PHHung : LR = 0.2 may be a litte too big!!     
 Learning_Rate = numpy.float32(0.01)
-Learning_Rate_Decay = numpy.float32(0.9999)
+Learning_Rate_Decay = numpy.float32(1)#0.99999)
 '''
 #PHHung : vanilla gd
 updates = []
@@ -318,20 +312,21 @@ def momentum_sgd(cost, params, momentum):
 update_proc = momentum_sgd(cost_function,params,0.8)
 update_proc.append((learning_rate_theano, learning_rate_theano * Learning_Rate_Decay))  
 
+#train
 training_proc = theano.function(
 	inputs=[idx], outputs=cost_function, updates=update_proc,
-	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]})
-
+	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size],dropout: np.cast['int32'](1)})
+#validate
 test_on_training_proc = theano.function(
 	inputs=[idx], outputs=errors(y), 
-	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]})
-
+	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size],dropout: np.cast['int32'](0)})
+#test
 test_on_testing_proc = theano.function(
 	inputs=[idx], outputs=errors(y), 
-	givens={x:testing_x_shared[idx*batch_size:(idx+1)*batch_size],y:testing_y_shared[idx*batch_size:(idx+1)*batch_size]})
+	givens={x:testing_x_shared[idx*batch_size:(idx+1)*batch_size],y:testing_y_shared[idx*batch_size:(idx+1)*batch_size],dropout: np.cast['int32'](0)})
 
-softmax_theano_test = theano.function(inputs=[idx], outputs=softmax,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size]})
-softmax_manual_test = theano.function(inputs=[idx], outputs=softmax_manual,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size]})
+#softmax_theano_test = theano.function(inputs=[idx], outputs=softmax,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size]})
+#softmax_manual_test = theano.function(inputs=[idx], outputs=softmax_manual,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size]})
 
 NEpochs =4000;
 iteration = 0;
