@@ -26,6 +26,7 @@ zero        0.586875                 0.622            (MFCC,2 layer)
 0.03c1      0.682 (@1000 epoch)      X                (as 0.03b,4L wider node)
 0.03c2      0.690 (@279 epoch)       0.65481          (as 0.03b,5L)    
 0.03d       0.692 (@378 epoch)       0.66202          (as 0.03c2,L2Regression)
+0.03d1      0.700 (@511 epoch)       ?                (as 0.03d,7L)
 0.03e       0.692 (@328 epoch)       0.66081          (as 0.03e,FBANK+MFCC)
 
             Overfit ?! it might be a good sign XD
@@ -69,7 +70,8 @@ Ver 0.03c: Modified by PHHung
     	    
 Ver 0.03d: Modified by PHHung
 	add L2 regression in cost function,hope to prevent overfiting
-	
+	0.03d1: 7layer in/128/256/512/1024/512/256/128/out 
+
 Ver 0.03e: by HYTseng
 	(need modify both train_nn.py and predict.py)
 	input with FBANK+MFCC, still overfitting, time to think about drop out?
