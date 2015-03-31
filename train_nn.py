@@ -2,9 +2,7 @@
 
 """
 Ver. zero by Jan
-
 Ver. 0.01 by PHHung
-
 Ver. 0.02 by HYTseng
 	some modification
 	1.use relu instead of tanh -> use Prelu instead
@@ -15,22 +13,20 @@ Ver. 0.02 by HYTseng
 	5.add some comment (something we should discuss)
 	6.add timer to record computation time
 	7.display accuracy @every epoch (instead of @every 200 iteration) 
-
 Ver. 0.03 by PHHung
 	1.add momentum_sgd
-
 Ver. 0.03a by Jan
 	1. replaced softmax layer by manual computation as requested 
     (no difference to theano's softmax but I left it in place as its probably faster)
     
 Ver. 0.03b by Jan
 	1. Switched to 39 Phonemes prediction
-
 Ver. 0.03c by PHHung
     deeper and wider network model
-
 Ver. 0.03d by PHHung
     add L2 regression
+Ver. 0.03e by HYTseng
+    input with FBANK and MFCC, add learning_rate decay
 """
 
 
@@ -39,7 +35,7 @@ import time
 import numpy
 import cPickle
 import theano
-
+from sklearn import decomposition
 #%% Read pickled data
 
 start_time = time.clock()
@@ -49,8 +45,14 @@ f = file(paths.pathToSaveFBANKTrain,'rb')
 raw_data = cPickle.load(f)
 f.close()
 
+g = file(paths.pathToSaveMFCCTrain,'rb')
+raw_data_1 = cPickle.load(g)
+g.close()
+
 raw_scaling = []
 raw_means = []
+
+raw_data = numpy.append(raw_data[:], raw_data_1[:], 1)
 
 # Data normalize
 for i in range(raw_data.shape[1]):
@@ -91,7 +93,7 @@ testing_y_shared = theano.tensor.cast(
 	theano.shared(numpy.asarray(testing_labels,dtype=theano.config.floatX),borrow=True),'int32')
 
 #%% Here we go
-NIn = 69 # FBANK:69 MFCC:39
+NIn = raw_data.shape[1] # FBANK:69 MFCC:39
 NHidden_1 = 128
 NHidden_2 = 256
 NHidden_3 = 300
@@ -224,6 +226,7 @@ W_hidden_4, b_hidden_4, a_hidden_4, W_hidden_5, b_hidden_5, a_hidden_5, W_out, b
 
 #PHHung : LR = 0.2 may be a litte too big!!     
 Learning_Rate = 0.01 
+Learning_Rate_Decay = 0.9999
 '''
 #PHHung : vanilla gd
 updates = []
@@ -257,7 +260,7 @@ test_on_testing_proc = theano.function(
 softmax_theano_test = theano.function(inputs=[idx], outputs=softmax,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size]})
 softmax_manual_test = theano.function(inputs=[idx], outputs=softmax_manual,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size]})
 
-NEpochs =4000;
+NEpochs =400;
 iteration = 0;
 
 #g_W_hidden = theano.function(
@@ -269,9 +272,10 @@ iteration = 0;
 
 best_accuracy = 0
 best_accuracy_epoch =0 
-
 #%%
 for epoch in xrange(NEpochs):
+    if epoch == 0:
+        print('%d dimensions of input feature'%NIn)
     for minibatch_i in xrange(NBatches):
         iteration = iteration+1;
         avg_cost = training_proc(minibatch_i)  
@@ -293,7 +297,7 @@ for epoch in xrange(NEpochs):
     test_errors = [test_on_testing_proc(i) for i in xrange(NTestBatches)]
     
     current_accuracy = numpy.mean(test_errors)
-    print 'Epoch %i Current Accuracy: %f ' % (epoch,current_accuracy)
+    print 'Epoch %i Current Accuracy: %f , learning rate : %f' % (epoch,current_accuracy,Learning_Rate)
     if best_accuracy < current_accuracy :
     	best_accuracy = current_accuracy
     	best_accuracy_epoch = epoch
@@ -301,16 +305,15 @@ for epoch in xrange(NEpochs):
     	#save best model
     	f = file('model_best.save', 'wb')
     	cPickle.dump(params, f, protocol=cPickle.HIGHEST_PROTOCOL)
-    	f.close()  		
+    	f.close()
     if (epoch % 10 == 0) :
         stop_time = time.clock()
 
         print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         print('Current best accuracy=%f @epoch%i Total time=%.2fmins'%(best_accuracy,best_accuracy_epoch,(stop_time-start_time)/60.))
         print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    Learning_Rate = Learning_Rate*Learning_Rate_Decay;
 
 stop_time = time.clock()
 print('=========Finish!!  Best accuracy=%f @epoch%i Total time=%.2fmins========'%
 	(best_accuracy,best_accuracy_epoch,(stop_time-start_time)/60.))
-
-
