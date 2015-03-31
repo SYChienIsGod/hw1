@@ -28,12 +28,9 @@ zero        0.586875                 0.622            (MFCC,2 layer)
 0.03d       0.692 (@378 epoch)       0.66202          (as 0.03c2,L2Regression)
 0.03d1      0.700 (@511 epoch)       ?                (as 0.03d,7L)
 0.03e       0.692 (@328 epoch)       0.66081          (as 0.03e?,FBANK+MFCC)
-0.03f       ?                        ?                (as 0.03e,7L,DropOut)   
-
-            Overfit ?! it might be a good sign XD
-            which mean that we are going to the next level of machine learning 
-            drop out, data augmentation(ex.MFCC+FBANK) 
-	    my be an useful technique to prevent overfit    
+0.03f       0.706 (@551 epoch)       ?                (as 0.03e,7L,DropOut)   
+0.03g       ?                        ?                (as 0.03f,LR decay)
+  
 
 Zero edition: create by Jan 
 	it takes about 8 mins on GTX760 for 200 epoch 
@@ -85,7 +82,6 @@ Ver 0.03g: Jan / fix for the learning rate decay
 ==================================================================
 
 ToDo:
->drop out
 >model average
 >matplot function
 >batch normalization?
@@ -95,3 +91,4 @@ Done:
 >momentum gd
 >softmax
 >learning rate decay
+>DropOut
