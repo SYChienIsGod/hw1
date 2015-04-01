@@ -120,13 +120,6 @@ NHidden_4 = 1024
 NHidden_5 = 512
 NHidden_6 = 256
 NHidden_7 = 128
-NHidden_1 = 30
-NHidden_2 = 30
-NHidden_3 = 30
-NHidden_4 = 30
-NHidden_5 = 30
-NHidden_6 = 30
-NHidden_7 = 30
 NOut = 39
 
 L1_weighting = 0.001
