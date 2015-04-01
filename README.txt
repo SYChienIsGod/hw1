@@ -94,6 +94,8 @@ Ver 0.04a: by PHHung
 	  (define your model more easily)
 	3.delete predict.py add predict_single.py
 
+Ver 0.04b: Jan / training set subselection has its own random number generator
+
 ==================================================================
 
 ToDo:

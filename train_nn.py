@@ -49,6 +49,9 @@ Ver. 0.04a by PHHung
 	separate layer define from train_nn (to Layer_Buffet.py)
 	it will be more clear when create model
 	tune parameter by argv[] (write scrip to train multi-model more easily)
+ 
+Ver. 0.04b by Jan
+    training data selection got its own random number generator
 
 """
 
@@ -111,7 +114,9 @@ f = file('normalize_parameter_means.save', 'wb')
 cPickle.dump(raw_means, f, protocol=cPickle.HIGHEST_PROTOCOL)
 f.close()
 
-testing_data_sel = rng.uniform(size=(raw_data.shape[0],)) < 0.1
+# Make sure that the random number generator for the training data selection is always identical
+training_data_sel_rng = numpy.random.RandomState(12345)
+testing_data_sel = training_data_sel_rng.uniform(size=(raw_data.shape[0],)) < 0.1
 training_data_sel = testing_data_sel==0
 training_data = raw_data[training_data_sel,:]
 testing_data = raw_data[testing_data_sel,:]
