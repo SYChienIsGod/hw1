@@ -32,11 +32,8 @@ zero        0.586875                 0.622            (MFCC,2 layer)
 0.03e       0.692 (@328 epoch)       0.66081          (as 0.03e?,FBANK+MFCC)
 0.03e1      0.706 (@551 epoch)       0.62023          (as 0.03e,7L)   
 0.03g       ?                        ?                (as 0.03e1,LR decay)
-0.04        0.75                     0.67867          (8 model blending, all 5L FBANK+MFCC)
-  
-Sorry that there is still some bug in DropOut so I remove it in 0.03g
-I'll fix it tomorrow~
-
+0.04        0.75 (train accuracy)    0.67867          (8 model blending, all 5L FBANK+MFCC)
+0.04a       ?                        ?                (major revision,DropOut)
 
 Zero edition: create by Jan 
 	it takes about 8 mins on GTX760 for 200 epoch 
@@ -86,6 +83,16 @@ Ver 0.03f: Modified by PHHung
 Ver 0.03g: Jan / fix for the learning rate decay
 
 Ver 0.03h: Jan / learning rate update now epoch-wise
+
+Ver 0.04: by HYTseng
+	model blending
+
+Ver 0.04a: by PHHung
+	Major revision
+	1.add DropOut
+	2.Separate layer's detail from train_nn to Layer_Buffet
+	  (define your model more easily)
+	3.delete predict.py add predict_single.py
 
 ==================================================================
 
