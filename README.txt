@@ -82,6 +82,8 @@ Ver 0.03f: Modified by PHHung
 
 Ver 0.03g: Jan / fix for the learning rate decay
 
+Ver 0.03h: Jan / learning rate update now epoch-wise
+
 ==================================================================
 
 ToDo:

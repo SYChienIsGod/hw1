@@ -40,6 +40,9 @@ Ver. 0.03f by PHHung
 
 Ver. 0.03g by Jan
     fix for the learning rate decay
+    
+Ver. 0.03h by Jan
+    moved learning rate update to epoch-wise procedure
 """
 
 
@@ -117,6 +120,13 @@ NHidden_4 = 1024
 NHidden_5 = 512
 NHidden_6 = 256
 NHidden_7 = 128
+NHidden_1 = 30
+NHidden_2 = 30
+NHidden_3 = 30
+NHidden_4 = 30
+NHidden_5 = 30
+NHidden_6 = 30
+NHidden_7 = 30
 NOut = 39
 
 L1_weighting = 0.001
@@ -149,7 +159,7 @@ def relu(x):
 #PHHung : z=w*x+b , the input of activate function is z , but here we are initializing w , I thought that is different thing (w & z)
 
 #To Drop or not to Drop, that is the question XD
-#dropout=T.iscalar('dropout')
+#dropout=T.iscalar(name='dropout')
 #p=0.5
 
 # Hidden layer 1
@@ -288,7 +298,7 @@ params = [ W_hidden_1, b_hidden_1, a_hidden_1, W_hidden_2, b_hidden_2, a_hidden_
 #    grads.append(theano.tensor.grad(cost_function,p))
   
 Learning_Rate = numpy.float32(0.01)
-Learning_Rate_Decay = numpy.float32(0.99999)
+Learning_Rate_Decay = numpy.float32(0.9999)
 
 # Create a shared variable for the learning rate
 learning_rate_theano = theano.shared(Learning_Rate, name='learning_rate')
@@ -304,20 +314,24 @@ def momentum_sgd(cost, params, momentum):
     return updates
     
 update_proc = momentum_sgd(cost_function,params,0.8)
-update_proc.append((learning_rate_theano, learning_rate_theano * Learning_Rate_Decay))  
+
+# The learning rate update is moved into its own function to allow epoch-wise updates
+#update_proc.append((learning_rate_theano, learning_rate_theano * Learning_Rate_Decay))  
+
+learning_rate_update = theano.function(inputs=[],outputs=learning_rate_theano,updates=[(learning_rate_theano,learning_rate_theano*Learning_Rate_Decay)])
 
 #train
 training_proc = theano.function(
 	inputs=[idx], outputs=cost_function, updates=update_proc,
-	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size],dropout: np.cast['int32'](1)})
+	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]}) # ,dropout: np.cast['int32'](1)
 #validate
 test_on_training_proc = theano.function(
 	inputs=[idx], outputs=errors(y), 
-	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size],dropout: np.cast['int32'](0)})
+	givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size],y:training_y_shared[idx*batch_size:(idx+1)*batch_size]}) # ,dropout: np.cast['int32'](0)
 #test
 test_on_testing_proc = theano.function(
 	inputs=[idx], outputs=errors(y), 
-	givens={x:testing_x_shared[idx*batch_size:(idx+1)*batch_size],y:testing_y_shared[idx*batch_size:(idx+1)*batch_size],dropout: np.cast['int32'](0)})
+	givens={x:testing_x_shared[idx*batch_size:(idx+1)*batch_size],y:testing_y_shared[idx*batch_size:(idx+1)*batch_size]}) #,dropout: np.cast['int32'](0)
 
 #softmax_theano_test = theano.function(inputs=[idx], outputs=softmax,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size]})
 #softmax_manual_test = theano.function(inputs=[idx], outputs=softmax_manual,givens={x:training_x_shared[idx*batch_size:(idx+1)*batch_size]})
@@ -345,7 +359,8 @@ for epoch in xrange(NEpochs):
 
     test_errors = [test_on_testing_proc(i) for i in xrange(NTestBatches)]    
     current_accuracy = numpy.mean(test_errors)
-    print 'Epoch %i Current Accuracy: %f , learning rate : %f' % (epoch,current_accuracy,learning_rate_theano.get_value())
+    current_learning_rate = learning_rate_update()
+    print 'Epoch %i Current Accuracy: %f , learning rate : %f' % (epoch,current_accuracy,current_learning_rate)
 
     if best_accuracy < current_accuracy :
     	best_accuracy = current_accuracy
