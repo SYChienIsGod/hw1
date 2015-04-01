@@ -7,6 +7,8 @@ To train
 >> THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python train_nn.py
 To generate predict result
 >> THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python predict.py
+To blend models and predict result
+>> THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python predict_blending.py
 
 (choose CPU or GPU base on your device)
 
@@ -88,12 +90,13 @@ Ver 0.03h: Jan / learning rate update now epoch-wise
 ==================================================================
 
 ToDo:
->model average
+>bagging
 >matplot function
 >batch normalization?
 >Use MFCC and FBANK together?
 
 Done:
+>model average (uniform)
 >momentum gd
 >softmax
 >learning rate decay
