@@ -28,7 +28,7 @@ zero        0.586875                 0.622            (MFCC,2 layer)
 0.03d       0.692 (@378 epoch)       0.66202          (as 0.03c2,L2Regression)
 0.03d1      0.700 (@511 epoch)       ?                (as 0.03d,7L)
 0.03e       0.692 (@328 epoch)       0.66081          (as 0.03e?,FBANK+MFCC)
-0.03e1      0.706 (@551 epoch)       ?                (as 0.03e,7L)   
+0.03e1      0.706 (@551 epoch)       0.62023          (as 0.03e,7L)   
 0.03g       ?                        ?                (as 0.03e1,LR decay)
   
 Sorry that there is still some bug in DropOut so I remove it in 0.03g
