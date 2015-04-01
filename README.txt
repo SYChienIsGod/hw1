@@ -30,6 +30,7 @@ zero        0.586875                 0.622            (MFCC,2 layer)
 0.03e       0.692 (@328 epoch)       0.66081          (as 0.03e?,FBANK+MFCC)
 0.03e1      0.706 (@551 epoch)       0.62023          (as 0.03e,7L)   
 0.03g       ?                        ?                (as 0.03e1,LR decay)
+0.04        0.75                     0.67867          (8 model blending, all 5L FBANK+MFCC)
   
 Sorry that there is still some bug in DropOut so I remove it in 0.03g
 I'll fix it tomorrow~
