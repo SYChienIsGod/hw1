@@ -52,6 +52,9 @@ Ver. 0.04a by PHHung
  
 Ver. 0.04b by Jan
     training data selection got its own random number generator
+    
+Ver. 0.04c by Jan
+    training data is permuted after loading
 
 """
 
@@ -126,6 +129,11 @@ raw_labels = cPickle.load(f)
 f.close()
 training_labels = raw_labels[training_data_sel]
 testing_labels = raw_labels[testing_data_sel]
+
+# Permute the data (reorder it to shuffle the mini batch content)
+random_permutation = rng.permutation(training_labels.shape[0])
+training_data = training_data[random_permutation,:]
+training_labels = training_labels[random_permutation]
 
 training_x_shared = theano.shared(
 	numpy.asarray(training_data,dtype=theano.config.floatX),borrow=True)

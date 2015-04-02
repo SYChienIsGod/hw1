@@ -96,6 +96,8 @@ Ver 0.04a: by PHHung
 
 Ver 0.04b: Jan / training set subselection has its own random number generator
 
+Ver 0.04c: Jan / permutation of training data
+
 ==================================================================
 
 ToDo:
