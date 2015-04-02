@@ -98,6 +98,8 @@ Ver 0.04b: Jan / training set subselection has its own random number generator
 
 Ver 0.04c: Jan / permutation of training data
 
+Ver 0.04d: Jan / added bagging function to draw random subsets from the trainig data
+
 ==================================================================
 
 ToDo:

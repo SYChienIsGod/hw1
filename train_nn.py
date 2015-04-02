@@ -55,6 +55,9 @@ Ver. 0.04b by Jan
     
 Ver. 0.04c by Jan
     training data is permuted after loading
+    
+Ver. 0.04d by Jan
+    added bagging function to draw random subsets from the trainig data
 
 """
 
@@ -67,6 +70,10 @@ import theano
 import theano.tensor as T
 import numpy as np
 import Layer_Buffet as LB
+
+def bootstrap_sample_aggregating (rng, fraction, training_data, training_labels):
+    bag_selection = rng.uniform(size=(training_data.shape[0],)) < fraction
+    return training_data[bag_selection,:], training_labels[bag_selection]
 
 """=======================Parameters to tune==========================="""
 if len(sys.argv)==1:
@@ -135,6 +142,11 @@ random_permutation = rng.permutation(training_labels.shape[0])
 training_data = training_data[random_permutation,:]
 training_labels = training_labels[random_permutation]
 
+# Obtain a bootstrap sample
+bag_data, bag_labels = bootstrap_sample_aggregating(rng,0.67,training_data,training_labels)
+# Enable the following lines to train on bagged data
+#training_data = bag_data
+#training_labels = bag_labels
 training_x_shared = theano.shared(
 	numpy.asarray(training_data,dtype=theano.config.floatX),borrow=True)
 training_y_shared = theano.tensor.cast(
@@ -157,12 +169,13 @@ NTestBatches = int(numpy.floor(
 
 
 """========================Create model==================================="""
+#%%
 NIn = raw_data.shape[1] # FBANK:69 MFCC:39
-NHidden_1 = 128
-NHidden_2 = 256
-NHidden_3 = 512
-NHidden_4 = 256
-NHidden_5 = 128
+NHidden_1 = 70
+NHidden_2 = 70
+NHidden_3 = 70
+NHidden_4 = 70
+NHidden_5 = 70
 NOut = 39
 
 # training or testing , different behavior in DropOut
