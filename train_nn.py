@@ -77,16 +77,19 @@ def bootstrap_sample_aggregating (rng, fraction, training_data, training_labels)
 
 """=======================Parameters to tune==========================="""
 if len(sys.argv)==1:
-	seed = 6789
+    seed = 6789
+    batch_size = 512
 else:
-	seed = int(sys.argv[1])
-print('random seed=%i'%seed)
-batch_size = 512 
-L1_weighting = 0.001 # not use now
+    seed = int(sys.argv[1])
+    batch_size = int(sys.argv[2])
+print('random seed=%i batch_size=%i'%(seed,batch_size))
+
+#tuned L1,L2 weight to make cost at first ten epoch: NLL~=2.00 L1~=0.1 L2~=0.1
+L1_weighting = 0.00001 
 L2_weighting = 0.0001
 Learning_Rate = numpy.float32(0.01)
-Learning_Rate_Decay = numpy.float32(0.9999)
-NEpochs =4000;
+Learning_Rate_Decay = numpy.float32(0.999)
+NEpochs =350;
 rng = numpy.random.RandomState(seed)
 
 
@@ -145,8 +148,8 @@ training_labels = training_labels[random_permutation]
 # Obtain a bootstrap sample
 bag_data, bag_labels = bootstrap_sample_aggregating(rng,0.67,training_data,training_labels)
 # Enable the following lines to train on bagged data
-#training_data = bag_data
-#training_labels = bag_labels
+training_data = bag_data
+training_labels = bag_labels
 training_x_shared = theano.shared(
 	numpy.asarray(training_data,dtype=theano.config.floatX),borrow=True)
 training_y_shared = theano.tensor.cast(
@@ -171,11 +174,13 @@ NTestBatches = int(numpy.floor(
 """========================Create model==================================="""
 #%%
 NIn = raw_data.shape[1] # FBANK:69 MFCC:39
-NHidden_1 = 70
-NHidden_2 = 70
-NHidden_3 = 70
-NHidden_4 = 70
-NHidden_5 = 70
+NHidden_1 = 128 
+NHidden_2 = 128
+NHidden_3 = 256
+NHidden_4 = 256
+NHidden_5 = 256
+NHidden_6 = 128
+NHidden_7 = 64
 NOut = 39
 
 # training or testing , different behavior in DropOut
@@ -185,9 +190,11 @@ train_test = T.iscalar('train_test')
 Hidden_layer_1 = LB.HiddenLayer_PReLU(rng,x,NIn,NHidden_1)
 Hidden_layer_2 = LB.HiddenLayer_PReLU(rng,Hidden_layer_1.Out,NHidden_1,NHidden_2)
 Hidden_layer_3 = LB.HiddenLayer_PReLU(rng,Hidden_layer_2.Out,NHidden_2,NHidden_3)
-Hidden_layer_4 = LB.HiddenLayer_PReLU_DropOut(rng,train_test,Hidden_layer_3.Out,NHidden_3,NHidden_4)
-Hidden_layer_5 = LB.HiddenLayer_PReLU_DropOut(rng,train_test,Hidden_layer_4.Out,NHidden_4,NHidden_5)
-Out_layer = LB.OutLayer(rng,Hidden_layer_5.Out,NHidden_5,NOut)
+Hidden_layer_4 = LB.HiddenLayer_PReLU(rng,Hidden_layer_3.Out,NHidden_3,NHidden_4)
+Hidden_layer_5 = LB.HiddenLayer_PReLU(rng,Hidden_layer_4.Out,NHidden_4,NHidden_5)
+Hidden_layer_6 = LB.HiddenLayer_PReLU_DropOut(rng,train_test,Hidden_layer_5.Out,NHidden_5,NHidden_6)
+Hidden_layer_7 = LB.HiddenLayer_PReLU_DropOut(rng,train_test,Hidden_layer_6.Out,NHidden_6,NHidden_7)
+Out_layer = LB.OutLayer(rng,Hidden_layer_7.Out,NHidden_7,NOut)
 
 softmax = theano.tensor.nnet.softmax(Out_layer.Out)
 prediction = theano.tensor.argmax(softmax,axis=1)
@@ -200,10 +207,9 @@ prediction = theano.tensor.argmax(softmax,axis=1)
     instead of a single entry. (Jan)
 '''
 #softmax_manual = softmax_exp_act/theano.tensor.sum(softmax_exp_act,axis=1,keepdims=True) # The actual softmax fraction
-L2_reg = (Hidden_layer_1.W_hidden**2).sum()+(Hidden_layer_2.W_hidden**2).sum()+(Hidden_layer_3.W_hidden**2).sum()+(Hidden_layer_4.W_hidden**2).sum()+(Hidden_layer_5.W_hidden**2).sum()+(Out_layer.W_out ** 2).sum()
-params =  Hidden_layer_1.params + Hidden_layer_2.params + Hidden_layer_3.params + Hidden_layer_4.params + Hidden_layer_5.params + Out_layer.params 
-
-
+L1_reg = abs(Hidden_layer_1.W_hidden).sum()+abs(Hidden_layer_2.W_hidden).sum()+abs(Hidden_layer_3.W_hidden).sum()+abs(Hidden_layer_4.W_hidden).sum()+abs(Hidden_layer_5.W_hidden).sum()+abs(Hidden_layer_6.W_hidden).sum()+abs(Hidden_layer_7.W_hidden).sum()+abs(Out_layer.W_out).sum()
+L2_reg = (Hidden_layer_1.W_hidden**2).sum()+(Hidden_layer_2.W_hidden**2).sum()+(Hidden_layer_3.W_hidden**2).sum()+(Hidden_layer_4.W_hidden**2).sum()+(Hidden_layer_5.W_hidden**2).sum()+(Hidden_layer_6.W_hidden**2).sum()+(Hidden_layer_7.W_hidden**2).sum()+(Out_layer.W_out ** 2).sum()
+params =  Hidden_layer_1.params + Hidden_layer_2.params + Hidden_layer_3.params + Hidden_layer_4.params + Hidden_layer_5.params + Hidden_layer_6.params + Hidden_layer_7.params + Out_layer.params 
 
 
 
@@ -215,7 +221,7 @@ def NLL(label):
 def errors(label):
     return T.mean(theano.tensor.eq(prediction,label))
 
-cost_function = NLL(y) + L2_reg*L2_weighting # +L1_reg*L1_weighting+L2_reg*L2_weighting
+cost_function = NLL(y) + L1_reg*L1_weighting + L2_reg*L2_weighting # +L1_reg*L1_weighting+L2_reg*L2_weighting
 
 # Create a shared variable for the learning rate
 learning_rate_theano = theano.shared(Learning_Rate, name='learning_rate')
@@ -256,14 +262,17 @@ test_on_testing_proc = theano.function(
 
 best_accuracy = 0
 best_accuracy_epoch =0 
+best_cost = 100
+best_cost_epoch =0 
 
 #%%
 for epoch in xrange(NEpochs):
     if epoch == 0:
         print('%d dimensions of input feature'%NIn)
+    avg_cost = 0
     for minibatch_i in xrange(NBatches):
-        avg_cost = training_proc(minibatch_i)  
-
+        avg_cost = avg_cost + training_proc(minibatch_i)  
+    avg_cost = avg_cost/NEpochs
     test_errors = [test_on_testing_proc(i) for i in xrange(NTestBatches)]    
     current_accuracy = numpy.mean(test_errors)
     current_learning_rate = learning_rate_update()
@@ -274,13 +283,21 @@ for epoch in xrange(NEpochs):
     	best_accuracy_epoch = epoch
     	print('best accuracy %f'%best_accuracy)
     	#save best model
-    	f = file('model_best.save', 'wb')
+    	f = file('model_best_acc_%i.save'%seed, 'wb')
     	cPickle.dump(params, f, protocol=cPickle.HIGHEST_PROTOCOL)
     	f.close()  		
+    if best_cost > avg_cost :
+        best_cost = avg_cost
+        best_cost_epoch = epoch
+        print('best cost %f'%avg_cost)
+        #save best model
+        #f = file('model_best_cost_%i.save'%seed, 'wb')
+        #cPickle.dump(params, f, protocol=cPickle.HIGHEST_PROTOCOL)
+        #f.close()       
     if (epoch % 10 == 0) :
         stop_time = time.clock()
         print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-        print('Current best accuracy=%f @epoch%i Total time=%.2fmins'%(best_accuracy,best_accuracy_epoch,(stop_time-start_time)/60.))
+        print('Current best_accu=%f@epoch%i best_cost=%f@epoch%i Total time=%.2fmins'%(best_accuracy,best_accuracy_epoch,best_cost,best_cost_epoch,(stop_time-start_time)/60.))
         print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 stop_time = time.clock()
