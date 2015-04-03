@@ -72,6 +72,29 @@ class HiddenLayer_PReLU_DropOut(object):
         self.Out = T.switch(T.neq(train_test, 0), Out_drop, Out)
         self.params = [self.W_hidden,b_hidden,a_hidden]#[self.W_hidden,self.b_hidden,self.a_hidden]
 
+class HiddenLayer_PReLU_DropConnect(object):
+    def __init__(self,rng,train_test,In,NIn,NOut,W_hidden=None,b_hidden=None,a_hidden=None,p=0.5):
+        if W_hidden is None :
+            W_hidden = theano.shared(
+                value=numpy.asarray(rng.uniform(
+                low=-numpy.sqrt(6./(NIn+NOut)),high=numpy.sqrt(6./(NIn+NOut)),
+                size=(NIn,NOut)),dtype=theano.config.floatX),name='W_hidden',borrow=True)
+        if b_hidden is  None :
+            b_hidden = theano.shared(
+                value=numpy.zeros((NOut,),dtype=theano.config.floatX),
+                name='b_hidden',borrow=True)
+        if a_hidden is None :
+            a_hidden = theano.shared(
+                value=numpy.zeros((NOut,),dtype=theano.config.floatX)+0.25,
+                name='a_hidden',borrow=True)
+        self.W_hidden = W_hidden
+        #self.b_hidden = b_hidden
+        #self.a_hidden = a_hidden
+        Out = PReLU(T.dot(In,W_hidden)+b_hidden,a_hidden)
+        Out_drop = PReLU(T.dot(In, dropout(W_hidden, p=0.5, rng=rng))+b_hidden,a_hidden)
+        self.Out = T.switch(T.neq(train_test, 0), Out_drop, Out)
+        self.params = [self.W_hidden,b_hidden,a_hidden]#[self.W_hidden,self.b_hidden,self.a_hidden]
+
 class HiddenLayer_ReLU(object):
     def __init__(self,rng,In,NIn,NOut,W_hidden=None,b_hidden=None):
         if W_hidden is None :
