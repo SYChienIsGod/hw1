@@ -187,6 +187,7 @@ Hidden_layer_2 = LB.HiddenLayer_PReLU(rng,Hidden_layer_1.Out,NHidden_1,NHidden_2
 Hidden_layer_3 = LB.HiddenLayer_PReLU(rng,Hidden_layer_2.Out,NHidden_2,NHidden_3)
 Hidden_layer_4 = LB.HiddenLayer_PReLU(rng,Hidden_layer_3.Out,NHidden_3,NHidden_4)
 Hidden_layer_5 = LB.HiddenLayer_PReLU(rng,Hidden_layer_4.Out,NHidden_4,NHidden_5)
+
 Out_layer = LB.OutLayer(rng,Hidden_layer_5.Out,NHidden_5,NOut)
 
 softmax = theano.tensor.nnet.softmax(Out_layer.Out)

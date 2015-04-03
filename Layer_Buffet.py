@@ -6,7 +6,8 @@ For now we have
     1.HiddenLayer_ReLU
     2.HiddenLayer_PReLU
     3.HiddenLayer_PReLU_DropOut
-    4.OutLayer
+    4.HiddenLayer_PReLU_DropConnect
+    5.OutLayer
 in buffet
 '''
 
