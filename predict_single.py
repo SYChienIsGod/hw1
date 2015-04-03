@@ -31,10 +31,20 @@ f = file(paths.pathToSaveTestIds,'rb')
 evaluation_ids = cPickle.load(f)
 f.close()
 
-validation_data = np.append(validation_data[:], validation_data_1[:], 1)
-evaluation_data = np.append(evaluation_data[:], evaluation_data_1[:], 1)
+#validation_data = np.append(validation_data[:], validation_data_1[:], 1)
+validation_data_1 = np.append(validation_data[1:,:], np.zeros((1, validation_data.shape[1])),0)
+validation_data_2 = validation_data
+validation_data_3 = np.append(np.zeros((1,validation_data.shape[1])), validation_data[:-1,:],0)
+validation_data = np.append(validation_data_2, validation_data_3, 1)
+validation_data = np.append(validation_data, validation_data_1, 1)
 
-
+#evaluation_data = np.append(evaluation_data[:], evaluation_data_1[:], 1)
+evaluation_data_1 = np.append(evaluation_data[1:,:], np.zeros((1, evaluation_data.shape[1])),0)
+evaluation_data_2 = evaluation_data
+evaluation_data_3 = np.append(np.zeros((1,evaluation_data.shape[1])), evaluation_data[:-1,:],0)
+evaluation_data = np.append(evaluation_data_2, evaluation_data_3, 1)
+evaluation_data = np.append(evaluation_data, evaluation_data_1, 1)
+print(evaluation_data.shape)
 #========================= load models ====================================================
 if len(sys.argv)==1:
     model_path = 'model_best.save'
