@@ -34,6 +34,7 @@ zero        0.586875                 0.622            (MFCC,2 layer)
 0.03g       ?                        ?                (as 0.03e1,LR decay)
 0.04        0.75 (train accuracy)    0.67867          (8 model blending, all 5L FBANK+MFCC)
 0.04a       ?                        ?                (major revision,DropOut)
+0.04e       0.783 (@744 epoch)       0.72683          (combine 3 frames)
 
 Zero edition: create by Jan 
 	it takes about 8 mins on GTX760 for 200 epoch 
@@ -99,6 +100,10 @@ Ver 0.04b: Jan / training set subselection has its own random number generator
 Ver 0.04c: Jan / permutation of training data
 
 Ver 0.04d: Jan / added bagging function to draw random subsets from the trainig data
+
+Ver 0.04e: HY  / combine 3 frames in one, FBANK feature -> 69*3 = 207-d feature
+                 batch_size 512, LR_D = 0.99995, 5 hidden_layers = [256 512 256 128 64]
+                 first layer drop out with p = 0.1
 
 ==================================================================
 
