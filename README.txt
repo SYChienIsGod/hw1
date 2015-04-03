@@ -104,6 +104,7 @@ Ver 0.04d: Jan / added bagging function to draw random subsets from the trainig 
 Ver 0.04e: HY  / combine 3 frames in one, FBANK feature -> 69*3 = 207-d feature
                  batch_size 512, LR_D = 0.99995, 5 hidden_layers = [256 512 256 128 64]
                  first layer drop out with p = 0.1
+                 train with bagging
 
 ==================================================================
 
