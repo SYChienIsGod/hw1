@@ -1,0 +1,55 @@
+\documentclass[]{article}
+\usepackage[top=1.25in, bottom=1.25in, left=1in, right=1in]{geometry}
+\usepackage{CJK}
+%opening
+\title{Machine Learning and having it Deep and Structured Homework I Report}
+\author{Group "SYChienIsGod"}
+
+\begin{document}
+
+\maketitle
+
+
+\section{The Group}
+\subsection{Members}
+The members of the group "SYChienIsGod" are
+\begin{CJK}{UTF8}{bsmi}
+\begin{enumerate}
+	\item 洪培恒, 
+	\item 曾泓諭, r03943005
+	\item 柯揚, d03921019
+	\item 李啟為, r03922054 
+\end{enumerate}
+\end{CJK}
+\subsection{Contribution}
+As all members were included in the code and algorithm review process (GitHub was used to maintain a common code base), the following list includes only the main efforts of each member:
+\begin{CJK}{UTF8}{bsmi}
+	\begin{enumerate}
+		\item 洪培恒, DropOut, ensemble training, parameter tuning
+		\item 曾泓諭: stochastic gradient descent/momentum, model ensemble, 
+		\item 柯揚: data preprocessing, basic network structure, report
+		\item 李啟為, DropConnect, parameter tuning
+	\end{enumerate}
+\end{CJK}
+\section{The Algorithm}
+\subsection{Data Preprocessing}
+For this first homework, the data considered were FBANK as well as the MFCC features to keep computation time low (i.e. raw audio data would have required convolutions which are - although parsimonious in their parameters - expensive to evaluate compared to fully connected layers). Preprocessing steps considered where rescaling and shifting as well as PCA to lower the number of dimensions. It has been widely reported in the literature that data should be centred (i.e. have zero mean) and properly scaled. To achieve proper scaling, he distributions in all 108 dimensions of the data were examined. As all dimension showed a spread in the data below one order of magnitude, a simple linear scaling could be considered (otherwise, more sophisticated scalings like $\log(1+x)$ would have to be applied). Among the examined factors were $\max$ scalings (i.e. scale to $[-1,1]$), the standard deviation $\sigma$ and the variance $\sigma^2$. Experimental results clearly indicated that simple $\max$ scaling was inappropriate as outliers would force the majority of the data to be close to a constant (e.g. 0) which inhibits learning. While both standard deviation and variance allowed learning to progress, the standard deviation offered a better convergence behaviour and was therefore used in all further experiments.\\
+In addition to that, variance concentration by Principal Component Analysis was considered. The goal is to have fewer variables to capture most of the variance in the data through a linear transformation. Preliminary analysis showed that $45$ components of the $69$ FBANK variables where necessary to retain over $99\%$ of the variance, however, besides a small speed-up resulting from the reduced number of variables the classification results did not improve, which is why further usage of this technique was discarded from experiments.
+\subsection{Data Structure}
+For the usage in Python, the data was converted using Python's cPickle to be able to read the data fast. The lookups to map the FBANK and MFCC features to phoneme labels where performed ahead of the experiments and stored in the pickled data in the same order as the FBANK and MFCC features. As we restricted the experiments to use the features instead of raw data, there was no extensive need for data structure tuning as the data fits in the memory of an average scientific computer.
+\subsection{Algorithm Design}
+The current literature offers a lot of inspiration about what to add beyond increasing the layering of $\tanh$-activated networks such as 
+\begin{itemize}
+	\item Dropout \cite{Hinton2012,Srivastava2014} and Dropconnect \cite{Wan2013} to inhibit coevolution of nodes
+	\item (Parametric) \cite{He2015} Rectangular linear units as activation functions \cite{Nair2010}
+	\item Batch Normalisation \cite{Ioffe2015} to enhance convergence
+	\item Fast Food Layers \cite{Yang2014} and Extreme Learning Machines \cite{Huang2006} to thin out the parameter space of fully connected layers (see \cite{Denil2013} as well)
+	\item Ensemble methods such as bagging \cite{Breiman1996} to combine multiple predictors with uncorrelated errors
+	\item Gradient Descent enhancements like momentum \cite{IlyaSutskever}
+\end{itemize}
+\subsection{Implementation}
+To implement the above algorithm, Theano \cite{Bergstra2010} was used for its general applicability and its simplicity in use in connection with Python. The main source of bugs arose from the requirement to "think in symbolic variables" as in Theano, every operation is defined symbolically to allow for optimisations and device specific compilation. The latter allows to evade Python's slow execution speed by compiling the symbolic expressions to (CUDA) C++.
+\section{The Experiments}
+\bibliographystyle{plain}
+\bibliography{mlds}
+\end{document}
