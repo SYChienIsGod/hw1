@@ -70,16 +70,17 @@ def bootstrap_sample_aggregating (rng, fraction, training_data, training_labels)
 
 """=======================Parameters to tune==========================="""
 if len(sys.argv)==1:
-	seed = 6789
+    seed = 6789
+    batch_size = 512
 else:
-	seed = int(sys.argv[1])
-print('random seed=%i'%seed)
-batch_size = 512 
+    seed = int(sys.argv[1])
+    batch_size = int(sys.argv[2])
+print('random seed=%i batch_size=%i'%(seed,batch_size))
 L1_weighting = 0.001 # not use now
 L2_weighting = 0.0001
-Learning_Rate = numpy.float32(0.01)
-Learning_Rate_Decay = numpy.float32(0.99995)
-NEpochs =4000;
+Learning_Rate = numpy.float32(0.12)
+Learning_Rate_Decay = numpy.float32(0.995)
+NEpochs =1000;
 rng = numpy.random.RandomState(seed)
 
 
@@ -95,13 +96,26 @@ f = file(paths.pathToSaveMFCCTrain,'rb')
 raw_data_1 = cPickle.load(f)
 f.close()
 
-raw_data_temp = numpy.append(raw_data[1:-1,:], raw_data[:-2,:], 1)
-raw_data = numpy.append(raw_data_temp[:], raw_data[2:,:], 1)
+raw_data_temp_0 = numpy.append(raw_data[3:-3,:], raw_data[2:-4,:], 1)
+raw_data_temp_1 = numpy.append(raw_data_temp_0[:,:], raw_data[1:-5,:], 1)
+raw_data_temp_2 = numpy.append(raw_data_temp_1[:,:], raw_data[:-6,:], 1)
+raw_data_temp_3 = numpy.append(raw_data_temp_2[:,:], raw_data[4:-2,:], 1)
+raw_data_temp_4 = numpy.append(raw_data_temp_3[:,:], raw_data[5:-1,:], 1)
+raw_data = numpy.append(raw_data_temp_4[:,:], raw_data[6:,:], 1)
+
+#raw_data_temp = numpy.append(raw_data[4:-4,:], raw_data[3:-5,:], 1)
+#raw_data_temp_1 = numpy.append(raw_data_temp[:,:], raw_data[2:-6,:], 1)
+#raw_data_temp_2 = numpy.append(raw_data_temp_1[:,:], raw_data[1:-7,:], 1)
+#raw_data_temp_3 = numpy.append(raw_data_temp_2[:,:], raw_data[:-8,:], 1)
+#raw_data_temp_4 = numpy.append(raw_data_temp_3[:,:], raw_data[5:-3,:], 1)
+#raw_data_temp_5 = numpy.append(raw_data_temp_4[:,:], raw_data[6:-2,:], 1)
+#raw_data_temp_6 = numpy.append(raw_data_temp_5[:,:], raw_data[7:-1,:], 1)
+#raw_data = numpy.append(raw_data_temp_6[:,:], raw_data[8:,:], 1)
 #raw_data = numpy.append(raw_data[:], raw_data_1[:], 1)
 
 f = file(paths.pathToSave39Labels,'rb')
 raw_labels = cPickle.load(f)
-raw_labels = raw_labels[1:-1]
+raw_labels = raw_labels[3:-3]
 assert(raw_labels.shape[0] == raw_data.shape[0])
 f.close()
 
@@ -171,11 +185,13 @@ NTestBatches = int(numpy.floor(
 """========================Create model==================================="""
 #%%
 NIn = raw_data.shape[1] # FBANK:69 MFCC:39
-NHidden_1 = 256
-NHidden_2 = 512
+NHidden_1 = 512
+NHidden_2 = 256
 NHidden_3 = 256
 NHidden_4 = 128
-NHidden_5 = 64
+NHidden_5 = 128
+NHidden_6 = 128
+NHidden_7 = 64
 NOut = 39
 
 # training or testing , different behavior in DropOut
@@ -187,8 +203,9 @@ Hidden_layer_2 = LB.HiddenLayer_PReLU(rng,Hidden_layer_1.Out,NHidden_1,NHidden_2
 Hidden_layer_3 = LB.HiddenLayer_PReLU(rng,Hidden_layer_2.Out,NHidden_2,NHidden_3)
 Hidden_layer_4 = LB.HiddenLayer_PReLU(rng,Hidden_layer_3.Out,NHidden_3,NHidden_4)
 Hidden_layer_5 = LB.HiddenLayer_PReLU(rng,Hidden_layer_4.Out,NHidden_4,NHidden_5)
-
-Out_layer = LB.OutLayer(rng,Hidden_layer_5.Out,NHidden_5,NOut)
+Hidden_layer_6 = LB.HiddenLayer_PReLU(rng,Hidden_layer_5.Out,NHidden_5,NHidden_6)
+Hidden_layer_7 = LB.HiddenLayer_PReLU(rng,Hidden_layer_6.Out,NHidden_6,NHidden_7)
+Out_layer = LB.OutLayer(rng,Hidden_layer_7.Out,NHidden_7,NOut)
 
 softmax = theano.tensor.nnet.softmax(Out_layer.Out)
 prediction = theano.tensor.argmax(softmax,axis=1)
@@ -201,8 +218,8 @@ prediction = theano.tensor.argmax(softmax,axis=1)
     instead of a single entry. (Jan)
 '''
 #softmax_manual = softmax_exp_act/theano.tensor.sum(softmax_exp_act,axis=1,keepdims=True) # The actual softmax fraction
-L2_reg = (Hidden_layer_1.W_hidden**2).sum()+(Hidden_layer_2.W_hidden**2).sum()+(Hidden_layer_3.W_hidden**2).sum()+(Hidden_layer_4.W_hidden**2).sum()+(Hidden_layer_5.W_hidden**2).sum()+(Out_layer.W_out ** 2).sum()
-params =  Hidden_layer_1.params + Hidden_layer_2.params + Hidden_layer_3.params + Hidden_layer_4.params + Hidden_layer_5.params + Out_layer.params 
+L2_reg = (Hidden_layer_1.W_hidden**2).sum()+(Hidden_layer_2.W_hidden**2).sum()+(Hidden_layer_3.W_hidden**2).sum()+(Hidden_layer_4.W_hidden**2).sum()+(Hidden_layer_5.W_hidden**2).sum()+(Hidden_layer_6.W_hidden**2).sum()+(Hidden_layer_7.W_hidden**2).sum()+(Out_layer.W_out ** 2).sum()
+params =  Hidden_layer_1.params + Hidden_layer_2.params + Hidden_layer_3.params + Hidden_layer_4.params + Hidden_layer_5.params + Hidden_layer_6.params + Hidden_layer_7.params + Out_layer.params 
 
 
 
@@ -275,13 +292,13 @@ for epoch in xrange(NEpochs):
     	best_accuracy_epoch = epoch
     	print('best accuracy %f'%best_accuracy)
     	#save best model
-    	f = file('model_best.save', 'wb')
+    	f = file('model_best_%i.save'%seed, 'wb')
     	cPickle.dump(params, f, protocol=cPickle.HIGHEST_PROTOCOL)
     	f.close()  		
     if (epoch % 10 == 0) :
         stop_time = time.clock()
         print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-        print('Current best accuracy=%f @epoch%i Total time=%.2fmins'%(best_accuracy,best_accuracy_epoch,(stop_time-start_time)/60.))
+        print('Current best epoch=%i accuracy=%f @epoch%i Total time=%.2fmins'%(epoch,best_accuracy,best_accuracy_epoch,(stop_time-start_time)/60.))
         print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 stop_time = time.clock()
