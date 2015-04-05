@@ -14,36 +14,58 @@ import theano.tensor as T
 f = file(paths.pathToSaveFBANKTrain,'rb')
 validation_data = cPickle.load(f)
 f.close()
-f = file(paths.pathToSaveMFCCTrain,'rb')
-validation_data_1 = cPickle.load(f)
-f.close()
+#f = file(paths.pathToSaveMFCCTrain,'rb')
+#validation_data_1 = cPickle.load(f)
+#f.close()
 f = file(paths.pathToSave39Labels,'rb')
 validation_labels = cPickle.load(f)
+#--
+validation_labels = validation_labels[3:-3]
+#--
 f.close()
 
 f = file(paths.pathToSaveFBANKTest,'rb')
 evaluation_data = cPickle.load(f)
 f.close()
-f = file(paths.pathToSaveMFCCTest,'rb')
-evaluation_data_1 = cPickle.load(f)
-f.close()
+#f = file(paths.pathToSaveMFCCTest,'rb')
+#evaluation_data_1 = cPickle.load(f)
+#f.close()
 f = file(paths.pathToSaveTestIds,'rb')
 evaluation_ids = cPickle.load(f)
 f.close()
 
-#validation_data = np.append(validation_data[:], validation_data_1[:], 1)
+#for FBANK*(3+1+3)
+validation_data_0 = numpy.append(validation_data[3:-3,:], validation_data[2:-4,:], 1)
+validation_data_1 = numpy.append(validation_data_0[:,:], validation_data[1:-5,:], 1)
+validation_data_2 = numpy.append(validation_data_1[:,:], validation_data[:-6,:], 1)
+validation_data_3 = numpy.append(validation_data_2[:,:], validation_data[4:-2,:], 1)
+validation_data_4 = numpy.append(validation_data_3[:,:], validation_data[5:-1,:], 1)
+validation_data = numpy.append(validation_data_4[:,:], validation_data[6:,:], 1)
+
+evaluation_data_0 = numpy.append(evaluation_data[3:-3,:], evaluation_data[2:-4,:], 1)
+evaluation_data_1 = numpy.append(evaluation_data_0[:,:], evaluation_data[1:-5,:], 1)
+evaluation_data_2 = numpy.append(evaluation_data_1[:,:], evaluation_data[:-6,:], 1)
+evaluation_data_3 = numpy.append(evaluation_data_2[:,:], evaluation_data[4:-2,:], 1)
+evaluation_data_4 = numpy.append(evaluation_data_3[:,:], evaluation_data[5:-1,:], 1)
+evaluation_data = numpy.append(evaluation_data_4[:,:], evaluation_data[6:,:], 1)
+
+'''#for FBANK*(1+1+1) 
 validation_data_1 = np.append(validation_data[1:,:], np.zeros((1, validation_data.shape[1])),0)
 validation_data_2 = validation_data
 validation_data_3 = np.append(np.zeros((1,validation_data.shape[1])), validation_data[:-1,:],0)
 validation_data = np.append(validation_data_2, validation_data_3, 1)
 validation_data = np.append(validation_data, validation_data_1, 1)
-
-#evaluation_data = np.append(evaluation_data[:], evaluation_data_1[:], 1)
 evaluation_data_1 = np.append(evaluation_data[1:,:], np.zeros((1, evaluation_data.shape[1])),0)
 evaluation_data_2 = evaluation_data
 evaluation_data_3 = np.append(np.zeros((1,evaluation_data.shape[1])), evaluation_data[:-1,:],0)
 evaluation_data = np.append(evaluation_data_2, evaluation_data_3, 1)
 evaluation_data = np.append(evaluation_data, evaluation_data_1, 1)
+'''
+
+'''#for FBANK+MFCC
+validation_data = np.append(validation_data[:], validation_data_1[:], 1)
+evaluation_data = np.append(evaluation_data[:], evaluation_data_1[:], 1)
+'''
 print(evaluation_data.shape)
 #========================= load models ====================================================
 if len(sys.argv)==1:

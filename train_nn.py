@@ -52,6 +52,9 @@ Ver. 0.04d by Jan
     
 Ver. 0.04e by HY
     combine three frames in one
+
+Ver. 0.04f by PHHung (Bug)
+    combine 7 frames in one
 """
 
 import sys
@@ -79,11 +82,9 @@ print('random seed=%i batch_size=%i'%(seed,batch_size))
 L1_weighting = 0.001 # not use now
 L2_weighting = 0.0001
 Learning_Rate = numpy.float32(0.12)
-Learning_Rate_Decay = numpy.float32(0.995)
+Learning_Rate_Decay = numpy.float32(0.9995)
 NEpochs =1000;
 rng = numpy.random.RandomState(seed)
-
-
 
 
 """========================Prepare dataset=============================""" 
@@ -96,6 +97,7 @@ f = file(paths.pathToSaveMFCCTrain,'rb')
 raw_data_1 = cPickle.load(f)
 f.close()
 
+#FBANK*(3+1+3)
 raw_data_temp_0 = numpy.append(raw_data[3:-3,:], raw_data[2:-4,:], 1)
 raw_data_temp_1 = numpy.append(raw_data_temp_0[:,:], raw_data[1:-5,:], 1)
 raw_data_temp_2 = numpy.append(raw_data_temp_1[:,:], raw_data[:-6,:], 1)
@@ -103,22 +105,11 @@ raw_data_temp_3 = numpy.append(raw_data_temp_2[:,:], raw_data[4:-2,:], 1)
 raw_data_temp_4 = numpy.append(raw_data_temp_3[:,:], raw_data[5:-1,:], 1)
 raw_data = numpy.append(raw_data_temp_4[:,:], raw_data[6:,:], 1)
 
-#raw_data_temp = numpy.append(raw_data[4:-4,:], raw_data[3:-5,:], 1)
-#raw_data_temp_1 = numpy.append(raw_data_temp[:,:], raw_data[2:-6,:], 1)
-#raw_data_temp_2 = numpy.append(raw_data_temp_1[:,:], raw_data[1:-7,:], 1)
-#raw_data_temp_3 = numpy.append(raw_data_temp_2[:,:], raw_data[:-8,:], 1)
-#raw_data_temp_4 = numpy.append(raw_data_temp_3[:,:], raw_data[5:-3,:], 1)
-#raw_data_temp_5 = numpy.append(raw_data_temp_4[:,:], raw_data[6:-2,:], 1)
-#raw_data_temp_6 = numpy.append(raw_data_temp_5[:,:], raw_data[7:-1,:], 1)
-#raw_data = numpy.append(raw_data_temp_6[:,:], raw_data[8:,:], 1)
-#raw_data = numpy.append(raw_data[:], raw_data_1[:], 1)
-
 f = file(paths.pathToSave39Labels,'rb')
 raw_labels = cPickle.load(f)
-raw_labels = raw_labels[3:-3]
+raw_labels = raw_labels[3:-3] #WHY? raw_labels = raw_labels[1:-1]
 assert(raw_labels.shape[0] == raw_data.shape[0])
 f.close()
-
 
 raw_scaling = []
 raw_means = []
