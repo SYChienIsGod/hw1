@@ -1,6 +1,7 @@
 \documentclass[]{article}
 \usepackage[top=1.25in, bottom=1.25in, left=1in, right=1in]{geometry}
 \usepackage{CJK}
+\usepackage{multirow}
 %opening
 \title{Machine Learning and having it Deep and Structured Homework I Report}
 \author{Group "SYChienIsGod"}
@@ -50,6 +51,75 @@ The current literature offers a lot of inspiration about what to add beyond incr
 \subsection{Implementation}
 To implement the above algorithm, Theano \cite{Bergstra2010} was used for its general applicability and its simplicity in use in connection with Python. The main source of bugs arose from the requirement to "think in symbolic variables" as in Theano, every operation is defined symbolically to allow for optimisations and device specific compilation. The latter allows to evade Python's slow execution speed by compiling the symbolic expressions to (CUDA) C++.
 \section{The Experiments}
+\begin{tabular}{ |l|l|l|l| }
+\hline
+\multicolumn{4}{ |c| }{Experimental Results (on GTX670)} \\
+\hline
+Version & Validation Accuracy & Submit Accuracy & Features\\ \hline
+zero & 0.586875 & 0.622 & MFCC, 2 layer \\ \hline
+0.01 & 0.595 & 0.626 & MFCC, 2layer, ReLU \\
+0.01-1 & 0.604 & X & FBANK, 3 layer, ReLU \\
+0.01-2 & 0.614 (@2000 epoch) & X & FBANK, 4 layer, ReLU \\ \hline
+0.02 & 0.602 (@275 epoch) & X & FBANK, 2 layer, PReLU \\
+0.02-1 & 0.622 (@2000 epoch) & X & FBANK, 4 layer, PReLU \\ \hline
+0,03 & 0.628 (@2000 epoch) & 0.63684 & as 0.02-1, Momentum \\
+0.03b & 0.671 (@2000 epoch) & 0.65078 & as 0.03, 39 Phonemes \\
+0.03c1 & 0.682 (@1000 epoch) & X & as 0.03b, 4L wider node \\
+0.03c2 & 0.690 (@279 epoch) & 0.65481 & as 0.03b, 5L \\
+0.03d & 0.692 (@378 epoch) & 0.66202 & as 0.03c2, L2Regression \\
+0.03d1 & 0.700 (@511 epoch) & ? & as 0.03d, 7L \\
+0.03e & 0.692 (@328 epoch) & 0.66081 & as 0.03e, FBANK+MFCC \\
+0.03e1 & 0.706 (@551 epoch) & 0.62023 & as 0.03e, 7L \\
+0.03g & ? & ? & as 0.03e1, Learning Rate decay \\ \hline
+0.04 & 0.75 (train accuracy) & 0.67867 & 8 model blending, all 5L FBANK+MFCC \\
+0.04a & ? & ? & major revision, DropOut \\
+0.04b & 0.693 & X & DropConnect \\
+0.04e & 0.783 (@744 epoch) & 0.72683 & combine 3 frames \\ \hline
+\end{tabular}
+\newline
+\\
+\begin{tabular}{ |l|l|l|l|l|l|l|l| }
+\hline
+\multicolumn{8}{ |c| }{Single Model Detail} \\
+\hline
+No & Seed & Batch & Input & Epoch & Validation & Training & Layer \\ \hline
+x & x & 256 & F+M & ~500 & ~0.686 & 0.726 & 128/256/512/256/128 \\
+x & x & 256 & F+M & ~500 & ~0.686 & ~0.723 & 128/256/512/256/128 \\
+x & x & 256 & F+M & ~500 & ~0.686 & 0.721 & 128/256/512/256/128 \\
+x & x & 1000 & F+M & ~500 & ~0.692 & 0.715 & 128/256/512/256/128 \\
+x & x & 1000 & F+M & ~500 & ~0.692 & 0.716 & 128/256/512/256/128 \\
+x & x & 512 & F+M & ~500 & ~0.694 & 0.742 & 128/256/512/256/128 \\ \hline
+1. & 5556 & 512 & F+M & 1071 & 0.695336 & 0.749 & 128/256/512/256D/128D \\
+2. & 6789 & 512 & F+M & 1164 & 0.693981 & 0.747 & 128/256/512/256D/128D \\
+3. & 3324 & 256 & F+M & 731 & 0.688221 & 0.733 & 128/256/512/256D/128D \\
+4. & 3364 & 512 & F+M & 523 & 0.705 & 0.759 & 128/128/256/256/256/128D/64D \\
+5. & 4653 & 128 & F+M & 265 & 0.706982 & 0.751 & 128/128/256/256/256/128D/64D \\ \hline
+6. & 3142 & 128 & F+M & ? & ? & 0.724 & 128/128/256/256/256/128D/64D bagging 0.67 \\
+7. & 3655 & 128 & F+M & 185 & 0.693393 & 0.730 & 128/128/256/256/256/128D/64D bagging 0.67 \\
+8. & 3242 & 64 & F+M & 90 & 0.691304 & 0.720 & 128/128/256/256/256/128D/64D bagging 0.67 \\
+9. & 3255 & 64 & F+M & 129 & 0.692003 & 0.727 & 128/128/256/256/256/128D/64D bagging 0.67 \\ \hline
+10. by HY \\
+11. & 4982 & 512 & F*3 & 249 & 0.730799 & 0.774 & 256/256/256/128/128/128D/64D \\
+12. & 2312 & 256 & F*3 & 1413 & 0.759103 & 0.777 & 256D/256/256/128/128/128/64 \\
+13. & 5342 & 128 & F*3 & 493 & 0.771038 & 0.798 & 256D/256/256/128/128/128/64 \\
+14. & 1010 & 128 & F*3 & 494 & 0.771393 & 0.798 & 256D/256/256/128/128/128/64 \\
+15. & 1009 & 128 & F*3 & 492 & 0.772371 & 0.802 & 256D/256/256/128/128/128/64 \\ \hline
+16. & 1321 & 128 & F*7 & 955 & 0.805114 & 0.856 & 512D/256/256/128/128/128/64 LR=0.08 \\
+17. & 3453 & 128 & F*7 & 999 & 0.807407 & 0.857 & 512D/256/256/128/128/128/64 LR=0.12 \\
+18. \\
+19. \\ \hline
+\end{tabular}
+\\
+\begin{tabular}{ |l|l|l|l| }
+\hline
+\multicolumn{4}{ |c| }{Blending Model Detail} \\
+\hline
+Recipe & Num of Model & Training & Testing(kaggle) \\ \hline
+0-1~0-8 & 8 & 0.75 & 0.67867 \\ \hline
+1+2+3 & 3 & 0.771 & 0.67533 \\ \hline
+1+2+4~9 & 8 & 0.780 & 0.69895 \\ \hline
+11~15 & 5 & 0.818 & 0.74427 \\ \hline
+\end{tabular}
 \bibliographystyle{plain}
 \bibliography{mlds}
 \end{document}
