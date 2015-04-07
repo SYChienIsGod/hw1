@@ -58,6 +58,9 @@ Ver. 0.04f by PHHung (Bug)
     
 Ver. 0.04g by Jan
     Make sure that a sentence is either in the validation or in the training set
+    
+Ver. 0.04h by Jan
+    Bootstrap sample aggregating now fills the bootstrap samples up by oversampling
 """
 
 import sys
@@ -70,11 +73,18 @@ import theano.tensor as T
 import numpy as np
 import Layer_Buffet as LB
 
-def bootstrap_sample_aggregating (rng, fraction, training_data, training_labels):
+def bootstrap_sample_aggregating (rng, fraction, training_data, training_labels, oversampling = False):
+    if fraction <= 0.5:
+        fraction = 0.51
+    elif fraction > 1:
+        fraction = 1
+    if not oversampling:
+        fraction = 2
     bag_selection = rng.uniform(size=(training_data.shape[0],)) < fraction
-    return training_data[bag_selection,:], training_labels[bag_selection]
-
-
+    indices = numpy.where(bag_selection)[0]
+    oversampling = rng.uniform(size=(indices.shape[0],)) < 1/fraction-1
+    indices = numpy.append(indices[oversampling], indices)
+    return training_data[indices,:], training_labels[indices]
 
 """=======================Parameters to tune==========================="""
 if len(sys.argv)==1:
@@ -160,8 +170,8 @@ for id_ in trainingIds:
 # Selection Process
 
 npTrainSent = numpy.asarray(list(trainingSentences))
-rng = numpy.random.RandomState(123456)
-validationSelection = rng.uniform(size=(npTrainSent.shape[0],)) < 0.15
+training_data_sel_rng = numpy.random.RandomState(123456) 
+validationSelection = training_data_sel_rng.uniform(size=(npTrainSent.shape[0],)) < 0.15
 validationSent = npTrainSent[validationSelection]
 trainingSent = npTrainSent[validationSelection==0]
 print "Validation Sentences X Training Sentences: %i" % len(set(validationSent).intersection(set(trainingSent)))
@@ -187,7 +197,7 @@ training_data = training_data[random_permutation,:]
 training_labels = training_labels[random_permutation]
 
 # Obtain a bootstrap sample
-bag_data, bag_labels = bootstrap_sample_aggregating(rng,0.67,training_data,training_labels)
+bag_data, bag_labels = bootstrap_sample_aggregating(rng,0.67,training_data,training_labels, oversampling=True)
 # Enable the following lines to train on bagged data
 training_data = bag_data
 training_labels = bag_labels

@@ -108,6 +108,9 @@ Ver 0.04e: HY  / combine 3 frames in one, FBANK feature -> 69*3 = 207-d feature
 Ver 0.04g: Jan
         Make sure that a sentence is either in the validation or in the training set
 
+Ver 0.04h: Jan
+        Bootstrap sample aggregating now fills the bootstrap samples up by oversampling
+
 ==================================================================
 
 ToDo:
