@@ -55,6 +55,9 @@ Ver. 0.04e by HY
 
 Ver. 0.04f by PHHung (Bug)
     combine 7 frames in one
+    
+Ver. 0.04g by Jan
+    Make sure that a sentence is either in the validation or in the training set
 """
 
 import sys
@@ -70,6 +73,8 @@ import Layer_Buffet as LB
 def bootstrap_sample_aggregating (rng, fraction, training_data, training_labels):
     bag_selection = rng.uniform(size=(training_data.shape[0],)) < fraction
     return training_data[bag_selection,:], training_labels[bag_selection]
+
+
 
 """=======================Parameters to tune==========================="""
 if len(sys.argv)==1:
@@ -132,12 +137,46 @@ cPickle.dump(raw_means, f, protocol=cPickle.HIGHEST_PROTOCOL)
 f.close()
 
 # Make sure that the random number generator for the training data selection is always identical
-training_data_sel_rng = numpy.random.RandomState(12345)
-testing_data_sel = training_data_sel_rng.uniform(size=(raw_data.shape[0],)) < 0.1
-training_data_sel = testing_data_sel==0
+# training_data_sel_rng = numpy.random.RandomState(12345)
+# testing_data_sel = training_data_sel_rng.uniform(size=(raw_data.shape[0],)) < 0.1
+# training_data_sel = testing_data_sel==0
+
+trainingIds = numpy.loadtxt(paths.pathToFBANKTrain,dtype='str_',delimiter=' ',usecols=(0,))
+trainingSentences_all = [trainingId.split('_')[1] for trainingId in trainingIds ]
+trainingSentences = set(trainingSentences_all)
+
+trainingSentenceDist = dict(zip(trainingSentences,numpy.zeros((len(trainingSentences),),dtype='int')))
+
+lastFrameNo = 100
+for id_ in trainingIds:
+    data = id_.split('_')
+    frameNo = int(data[2])
+    if frameNo > lastFrameNo:
+        lastFrameNo = frameNo
+        continue
+    trainingSentenceDist[data[1]] +=1
+    lastFrameNo = frameNo
+
+# Selection Process
+
+npTrainSent = numpy.asarray(list(trainingSentences))
+rng = numpy.random.RandomState(123456)
+validationSelection = rng.uniform(size=(npTrainSent.shape[0],)) < 0.15
+validationSent = npTrainSent[validationSelection]
+trainingSent = npTrainSent[validationSelection==0]
+print "Validation Sentences X Training Sentences: %i" % len(set(validationSent).intersection(set(trainingSent)))
+
+NTrainingSent = numpy.sum([trainingSentenceDist[tS] for tS in trainingSent])
+NValidationSent = numpy.sum([trainingSentenceDist[vS] for vS in validationSent])
+print "#Validation Sentences: %i, #Training Sentences: %i" % (NValidationSent,NTrainingSent)
+
+trainingIdx = numpy.in1d(numpy.asarray(trainingSentences_all), trainingSent)
+validationIdx = numpy.in1d(numpy.asarray(trainingSentences_all), validationSent)
+print "#Frames in Training Set: %i, in Validation Set: %i" % (numpy.sum(trainingIdx), numpy.sum(validationIdx))
+training_data_sel=trainingIdx[3:-3]
+testing_data_sel=validationIdx[3:-3]
 training_data = raw_data[training_data_sel,:]
 testing_data = raw_data[testing_data_sel,:]
-
 
 training_labels = raw_labels[training_data_sel]
 testing_labels = raw_labels[testing_data_sel]
