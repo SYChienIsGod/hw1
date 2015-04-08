@@ -64,6 +64,9 @@ Ver. 0.04h by Jan
 
 Ver. 0.04i by Jan
     Disabled bootstrap oversampling by default
+
+Ver. 0.04j by Jan
+    Set temporary data to None to save memory
 """
 
 import sys
@@ -81,10 +84,10 @@ def bootstrap_sample_aggregating (rng, fraction, training_data, training_labels,
         fraction = 0.51
     elif fraction > 1:
         fraction = 1
-    if not oversampling:
-        fraction = 2
     bag_selection = rng.uniform(size=(training_data.shape[0],)) < fraction
     indices = numpy.where(bag_selection)[0]
+    if not oversampling:
+        return training_data[indices,:], training_labels[indices]
     oversampling = rng.uniform(size=(indices.shape[0],)) < 1/fraction-1
     indices = numpy.append(indices[oversampling], indices)
     return training_data[indices,:], training_labels[indices]
@@ -111,17 +114,22 @@ start_time = time.clock()
 f = file(paths.pathToSaveFBANKTrain,'rb')
 raw_data = cPickle.load(f)
 f.close()
-f = file(paths.pathToSaveMFCCTrain,'rb')
-raw_data_1 = cPickle.load(f)
-f.close()
+#f = file(paths.pathToSaveMFCCTrain,'rb')
+#raw_data_1 = cPickle.load(f)
+#f.close()
 
 #FBANK*(3+1+3)
 raw_data_temp_0 = numpy.append(raw_data[3:-3,:], raw_data[2:-4,:], 1)
 raw_data_temp_1 = numpy.append(raw_data_temp_0[:,:], raw_data[1:-5,:], 1)
+raw_data_temp_0 = None
 raw_data_temp_2 = numpy.append(raw_data_temp_1[:,:], raw_data[:-6,:], 1)
+raw_data_temp_1 = None
 raw_data_temp_3 = numpy.append(raw_data_temp_2[:,:], raw_data[4:-2,:], 1)
+raw_data_temp_2 = None
 raw_data_temp_4 = numpy.append(raw_data_temp_3[:,:], raw_data[5:-1,:], 1)
+raw_data_temp_3 = None
 raw_data = numpy.append(raw_data_temp_4[:,:], raw_data[6:,:], 1)
+raw_data_temp_4 = None
 
 f = file(paths.pathToSave39Labels,'rb')
 raw_labels = cPickle.load(f)
@@ -154,6 +162,7 @@ f.close()
 # testing_data_sel = training_data_sel_rng.uniform(size=(raw_data.shape[0],)) < 0.1
 # training_data_sel = testing_data_sel==0
 
+#%% Training / Test Data Split
 trainingIds = numpy.loadtxt(paths.pathToFBANKTrain,dtype='str_',delimiter=' ',usecols=(0,))
 trainingSentences_all = [trainingId.split('_')[1] for trainingId in trainingIds ]
 trainingSentences = set(trainingSentences_all)
@@ -325,7 +334,7 @@ for epoch in xrange(NEpochs):
     for minibatch_i in xrange(NBatches):
         avg_cost = training_proc(minibatch_i)  
 
-    test_errors = [test_on_testing_proc(i) for i in xrange(NTestBatches)]    
+    test_errors = [test_on_testing_proc(i) for i in xrange(NTestBatches)]
     current_accuracy = numpy.mean(test_errors)
     current_learning_rate = learning_rate_update()
     print 'Epoch %i, Current Accuracy: %f, Avg. cost: %f, Learning rate: %f' % (epoch,current_accuracy,avg_cost,current_learning_rate)

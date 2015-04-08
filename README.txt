@@ -113,6 +113,9 @@ Ver 0.04h: Jan
 
 Ver 0.04i: Jan
         Disabled default bootstrap oversampling to save memory
+
+Ver. 0.04j by Jan
+        Set temporary data to None to save memory
 ==================================================================
 
 ToDo:
