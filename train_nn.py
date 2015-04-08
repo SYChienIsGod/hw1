@@ -61,6 +61,9 @@ Ver. 0.04g by Jan
     
 Ver. 0.04h by Jan
     Bootstrap sample aggregating now fills the bootstrap samples up by oversampling
+
+Ver. 0.04i by Jan
+    Disabled bootstrap oversampling by default
 """
 
 import sys
@@ -197,7 +200,7 @@ training_data = training_data[random_permutation,:]
 training_labels = training_labels[random_permutation]
 
 # Obtain a bootstrap sample
-bag_data, bag_labels = bootstrap_sample_aggregating(rng,0.67,training_data,training_labels, oversampling=True)
+bag_data, bag_labels = bootstrap_sample_aggregating(rng,0.67,training_data,training_labels, oversampling=False)
 # Enable the following lines to train on bagged data
 training_data = bag_data
 training_labels = bag_labels

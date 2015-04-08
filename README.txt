@@ -111,6 +111,8 @@ Ver 0.04g: Jan
 Ver 0.04h: Jan
         Bootstrap sample aggregating now fills the bootstrap samples up by oversampling
 
+Ver 0.04i: Jan
+        Disabled default bootstrap oversampling to save memory
 ==================================================================
 
 ToDo:
