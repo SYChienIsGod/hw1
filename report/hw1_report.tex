@@ -26,9 +26,9 @@ The members of the group "SYChienIsGod" are
 As all members were included in the code and algorithm review process (GitHub was used to maintain a common code base), the following list includes only the main efforts of each member:
 \begin{CJK}{UTF8}{bsmi}
 	\begin{enumerate}
-		\item 洪培恒, DropOut, ensemble training, parameter tuning
-		\item 曾泓諭: stochastic gradient descent/momentum, model ensemble, 
-		\item 柯揚: data preprocessing, basic network structure, report
+		\item 洪培恒, DropOut, ensemble training, parameter tuning, report (Experiments section)
+		\item 曾泓諭: stochastic gradient descent/momentum, model ensemble
+		\item 柯揚: data preprocessing, basic network structure, report (Algorithm section)
 		\item 李啟為, DropConnect, parameter tuning
 	\end{enumerate}
 \end{CJK}
@@ -51,6 +51,7 @@ The current literature offers a lot of inspiration about what to add beyond incr
 \subsection{Implementation}
 To implement the above algorithm, Theano \cite{Bergstra2010} was used for its general applicability and its simplicity in use in connection with Python. The main source of bugs arose from the requirement to "think in symbolic variables" as in Theano, every operation is defined symbolically to allow for optimisations and device specific compilation. The latter allows to evade Python's slow execution speed by compiling the symbolic expressions to (CUDA) C++.
 \section{The Experiments}
+The first experiments where kept rather simple to establish a working baseline model, using the MFCC features, 48 phonemes in the output and a two layer architecture with the standard $tanh$ activation function. Furthermore, dimension wise input normalisation was established by subtracting the mean and dividing by the standard deviation. Having this working well, we started on expanding the network in different directions. The first was to switch to the rectified linear unit (ReLU) to replace the $tanh$ activation function. This helped significantly in boosting convergence of the network and by that speeding up the training process. The following extension was to use FBANK features, which were expected to supply more information as they have larger dimensions (although the addition information may be speaker related in which case this wouldn't help at all as we would prefer to be invariant to speakers). Along with adding the PReLU activation function, this lead to further improvements. It could also be observed that we were not overfitting as the Kaggle results were better than our own validation accuracy. This changed when we switched to 39 phonemes which lead to a significant jump from 0.628 to 0.671 on the validation accuracy. At that time the results on Kaggle fell behind the validation accuracy, which lead to the implementation of drop out. After trying different parameter combinations, deeper and wider networks and the combination of FBANK and MFCC features, we added drop out along with a learning rate decay to reduce the overfitting while further improving our results (both on the validation and the test data set). The last step was to concatenate frames in the input to provide preceding and succeeding frames as well as to add model blending.
 \begin{tabular}{ |l|l|l|l| }
 \hline
 \multicolumn{4}{ |c| }{Experimental Results (on GTX670)} \\
