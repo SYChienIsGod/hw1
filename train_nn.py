@@ -259,23 +259,20 @@ Hidden_layer_6 = LB.HiddenLayer_PReLU(rng,Hidden_layer_5.Out,NHidden_5,NHidden_6
 Hidden_layer_7 = LB.HiddenLayer_PReLU(rng,Hidden_layer_6.Out,NHidden_6,NHidden_7)
 Out_layer = LB.OutLayer(rng,Hidden_layer_7.Out,NHidden_7,NOut)
 
-softmax = theano.tensor.nnet.softmax(Out_layer.Out)
-prediction = theano.tensor.argmax(softmax,axis=1)
-#softmax_lin_act = theano.tensor.dot(act_hidden_3,W_out)+b_out # The linear activation just before softmax
-#softmax_exp_act = theano.tensor.exp(softmax_lin_act-theano.tensor.max(softmax_lin_act,axis=1,keepdims=True)) 
+#softmax = theano.tensor.nnet.softmax(Out_layer.Out)
+softmax_lin_act = Out_layer.Out # The linear activation just before softmax
+softmax_exp_act = theano.tensor.exp(softmax_lin_act-theano.tensor.max(softmax_lin_act,axis=1,keepdims=True)) 
 ''' Exponentiation. The subtraction is a numerical trick. 
     For each data point we subtract the maximum activation which is equal to 
     dividing both the numerator and the denominator of the softmax fraction. 
     Keepdims means that the result of the max function still has 39 (equal) entries
     instead of a single entry. (Jan)
 '''
-#softmax_manual = softmax_exp_act/theano.tensor.sum(softmax_exp_act,axis=1,keepdims=True) # The actual softmax fraction
+softmax_manual = softmax_exp_act/theano.tensor.sum(softmax_exp_act,axis=1,keepdims=True) # The actual softmax fraction
+softmax = softmax_manual
+prediction = theano.tensor.argmax(softmax,axis=1)
 L2_reg = (Hidden_layer_1.W_hidden**2).sum()+(Hidden_layer_2.W_hidden**2).sum()+(Hidden_layer_3.W_hidden**2).sum()+(Hidden_layer_4.W_hidden**2).sum()+(Hidden_layer_5.W_hidden**2).sum()+(Hidden_layer_6.W_hidden**2).sum()+(Hidden_layer_7.W_hidden**2).sum()+(Out_layer.W_out ** 2).sum()
 params =  Hidden_layer_1.params + Hidden_layer_2.params + Hidden_layer_3.params + Hidden_layer_4.params + Hidden_layer_5.params + Hidden_layer_6.params + Hidden_layer_7.params + Out_layer.params 
-
-
-
-
 
 """===========================Train & validate============================"""
 def NLL(label):
